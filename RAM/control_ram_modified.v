@@ -24,8 +24,8 @@ module control_ram (
     output reg ram2_we,
     output reg wr_en_o,
     output reg rd_en_o,
-    output reg [17:0] addr_1,
-    output reg [17:0] addr_2,
+    output reg [19:0] addr_1,
+    output reg [19:0] addr_2,
     inout reg [15:0] data_1,
     inout reg [15:0] data_2,
     output reg [7:0] led_data,
@@ -33,7 +33,7 @@ module control_ram (
   );
 
     reg[15:0] data_reg;         //模拟寄存器，暂存数据
-    reg[17:0] addr_reg;         //模拟寄存器，暂存地址
+    reg[19:0] addr_reg;         //模拟寄存器，暂存地址
 
     reg [1:0] m_curr_state, m_next_state;
     parameter ans = 0;
