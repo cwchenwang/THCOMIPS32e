@@ -10,6 +10,6 @@ module pc(
     input wire[`RegAddrBus] branch_target_address_i,
     output reg[`InstAddrBus] pc,
     output reg ce
-)
+);
 
 endmodule
