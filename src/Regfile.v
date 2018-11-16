@@ -4,7 +4,7 @@ module Regfile(
     input wire rst,
     input wire clk,
 
-    // write
+    // From MEM/WB or WB, write
     input wire we,
     input wire[`RegAddrBus] waddr,
     input wire[`RegBus] wdata,
