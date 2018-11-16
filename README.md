@@ -1,8 +1,11 @@
-## THCOMIPS32e
+# THCOMIPS32e
 
 This is the project of Computer organization course of Tsinghua University, fall 2018.
 
-## Instruction set
+## Code Conventions
+- Encoding: GBK
+  
+## Instruction Set
 
 > ADDIU ADDU
 >
