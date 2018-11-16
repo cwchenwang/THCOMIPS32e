@@ -175,6 +175,7 @@
 `define DataMemNum 131071
 `define DataMemNumLog2 17
 `define ByteWidth 7:0
+`define RamSel 3:0
 
 // Register
 `define RegAddrBus 4:0

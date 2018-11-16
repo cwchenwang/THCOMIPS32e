@@ -1,4 +1,5 @@
-`include "defines.v"
+`timescale 1ns / 1ps
+`include "defines.vh"
 
 module ID(
     input wire rst,
@@ -45,7 +46,7 @@ module ID(
     output wire[`InstBus] inst_o,
 
     // Pipeline stop/continue
-    output wire stallreq_id,
+    output wire stallreq_id
 );
 
 endmodule

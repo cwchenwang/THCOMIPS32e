@@ -1,4 +1,5 @@
-`include "defines.v"
+`timescale 1ns / 1ps
+`include "defines.vh"
 
 module id_ex(
     input wire clk,
@@ -31,7 +32,7 @@ module id_ex(
     output reg[`RegBus] ex_link_addr,
     output reg ex_is_in_delayslot,
     output reg is_in_delayslot_o,
-    output reg[`RegBus] ex_inst,
+    output reg[`RegBus] ex_inst
 );
 
 endmodule

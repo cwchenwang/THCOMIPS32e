@@ -1,4 +1,5 @@
-`include "defines.v"
+`timescale 1ns / 1ps
+`include "defines.vh"
 
 module Regfile(
     input wire rst,
@@ -17,7 +18,7 @@ module Regfile(
     //read reg2
     input wire re2,
     input wire[`RegAddrBus] raddr2,
-    output reg[`RegBus] rdata2,
+    output reg[`RegBus] rdata2
 );
 
 endmodule
