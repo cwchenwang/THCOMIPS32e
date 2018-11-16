@@ -20,11 +20,11 @@ module MEM(
     output reg[`RegBus] wdata_o,
 
     // To RAM
-    output reg[`RegBus] mem_addr_o,
     output wire mem_we_o,
-    output reg[3:0] mem_sel_o,
-    output reg[`RegBus] mem_data_o,
-    output reg mem_ce_o
+    output reg mem_ce_o,
+    output reg[`RamSel] mem_sel_o,
+    output reg[`DataBus] mem_data_o,
+    output reg[`DataAddrBus] mem_addr_o
 );
 
 endmodule
