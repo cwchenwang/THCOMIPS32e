@@ -242,3 +242,12 @@
 `define EXE_TNEI_OP 8'b01001001
    
 `define EXE_ERET_OP 8'b01101011
+
+// ROM control signals (ROM::op, PC::rom_op_o)
+`define ROM_OP_READ 1'b0
+`define ROM_OP_WRITE 1'b1
+
+// Values of PC::rom_op_i[1:0]
+`define PC_ROM_OP_READ 2'b00
+`define PC_ROM_OP_WRITE 2'b01
+`define PC_ROM_OP_INST 2'b10  // incl, 2'b11

@@ -48,4 +48,29 @@ module EX(
     output reg stallreq_ex
 );
 
+    wire[`DataBus] logicout;
+    wire[`DataBus] shiftres;
+    wire[`DataBus] moveres;
+    wire[`DataBus] arithmeticres;
+    wire[`DataBus] link_address_i;
+
+    always @(*) begin
+    // TODO: ...
+    
+        case (alusel_i) 
+        `EXE_RES_LOGIC:
+            wdata_o <= logicout;
+        `EXE_RES_SHIFT:
+            wdata_o <= shiftres;
+        `EXE_RES_MOVE:
+            wdata_o <= moveres;
+        `EXE_RES_ARITHMETIC:
+            wdata_o <= arithmeticres;
+        `EXE_RES_JUMP_BRANCH:
+            wdata_o <= link_address_i;
+        default:
+            wdata_o <= `ZeroWord;
+        endcase
+    end
+
 endmodule

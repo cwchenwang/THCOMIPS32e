@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module SEG7_LUT (   oSEG1,iDIG   );
 input   wire[3:0]   iDIG;
 output  wire[7:0]   oSEG1;

@@ -1,4 +1,5 @@
-`include "defines.v"
+`timescale 1ns / 1ps
+`include "defines.vh"
 
 module MEM_WB(
     input wire clk,
@@ -16,7 +17,7 @@ module MEM_WB(
     // To WB
     output reg[`RegAddrBus] wb_wd,
     output reg wb_wreg,
-    output reg[`RegBus] wb_wdata,
+    output reg[`RegBus] wb_wdata
 );
 
 endmodule
