@@ -24,7 +24,7 @@ module ID(
     // For branch/jump
     input wire is_in_delay_slot_i,
     // not sure
-    output reg[`InstBus] next_inst_in_delay_slot_o, // LYL: appears in Chapter 8
+    output reg next_inst_in_delayslot_o, // LYL: appears in Chapter 8
     output reg branch_flag_o,
     output reg[`RegAddrBus] branch_target_addr_o,
     output reg[`RegAddrBus] link_addr_o,
@@ -129,7 +129,7 @@ module ID(
                         reg2_read_o <= 1'b0;
                         link_addr_o <= `ZeroWord;
                         branch_flag_o <= `Branch;
-                        next_inst_in_delay_slot_o <= `InDelaySlot;
+                        next_inst_in_delayslot_o <= `InDelaySlot;
                         instvalid <= `InstValid;
                         branch_target_addr_o <= {pc_plus_4[31:28], inst_i[25:0], 2'b00};    // pc[31:28] or pc_plus_4[31:28]??
                     end
@@ -142,7 +142,7 @@ module ID(
                         wd_o <= 5'b11111;
                         link_addr_o <= pc_plus_8;
                         branch_flag_o <= `Branch;
-                        next_inst_in_delay_slot_o <= `InDelaySlot;
+                        next_inst_in_delayslot_o <= `InDelaySlot;
                         instvalid <= `InstValid;
                         branch_target_addr_o <= {pc_plus_4[31:28], inst_i[25:0], 2'b00};
                     end
@@ -156,7 +156,7 @@ module ID(
                         if (reg1_o == reg2_o) begin
                             branch_target_addr_o <= pc_plus_4 + imm_sll2_signedext;
                             branch_flag_o <= `Branch;
-                            next_inst_in_delay_slot_o <= `InDelaySlot;
+                            next_inst_in_delayslot_o <= `InDelaySlot;
                         end                    
                     end
                     `EXE_BGTZ: begin    // bgtz
@@ -169,7 +169,7 @@ module ID(
                         if (!reg1_o[31] && reg1_o != `ZeroWord) begin
                             branch_target_addr_o <= pc_plus_4 + imm_sll2_signedext;
                             branch_flag_o <= `Branch;
-                            next_inst_in_delay_slot_o <= `InDelaySlot;
+                            next_inst_in_delayslot_o <= `InDelaySlot;
                         end
                     end
                     `EXE_BNE: begin
@@ -182,7 +182,7 @@ module ID(
                         if (reg1_o != reg2_o) begin
                             branch_target_addr_o <= pc_plus_4 + imm_sll2_signedext;
                             branch_flag_o <= `Branch;
-                            next_inst_in_delay_slot_o <= `InDelaySlot;
+                            next_inst_in_delayslot_o <= `InDelaySlot;
                         end
                     end
                     endcase // case (op3)

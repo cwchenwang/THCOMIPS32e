@@ -19,7 +19,7 @@ module ID_EX(
     input wire[`RegBus] id_link_addr,
     input wire id_is_in_delayslot,
     // not sure
-    //input wire[`InstBus] next_inst_in_delayslot_i,
+    input wire next_inst_in_delayslot_i,
     input wire[`RegBus] id_inst,
 
     // To ex

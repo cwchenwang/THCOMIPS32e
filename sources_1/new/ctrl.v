@@ -2,7 +2,7 @@
 `include "defines.vh"
 
 module CTRL(
-    input rst,
+    input wire rst,
 
     // From ID and EX
     input wire stallreq_from_id,
