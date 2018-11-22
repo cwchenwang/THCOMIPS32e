@@ -22,77 +22,63 @@
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
-// Module:  ctrl
-// File:    ctrl.v
+// Module:  data_ram
+// File:    data_ram.v
 // Author:  Lei Silei
 // E-mail:  leishangwen@163.com
-// Description: 控制模块，控制流水线的刷新、暂停等
+// Description: 数据存储器
 // Revision: 1.0
 //////////////////////////////////////////////////////////////////////
 
 `include "defines.vh"
 
-module ctrl(
+module data_ram(
 
-	input wire										rst,
-
-	input wire[31:0]             excepttype_i,
-	input wire[`RegBus]          cp0_epc_i,
-
-	input wire                   stallreq_from_id,
-
-  //来自执行阶段的暂停请求
-	input wire                   stallreq_from_ex,
-
-	output reg[`RegBus]          new_pc,
-	output reg                   flush,	
-	output reg[5:0]              stall       
+	input	wire										clk,
+	input wire										ce,
+	input wire										we,
+	input wire[`DataAddrBus]			addr,
+	input wire[3:0]								sel,
+	input wire[`DataBus]						data_i,
+	output reg[`DataBus]					data_o
 	
 );
 
+	reg[`ByteWidth]  data_mem0[0:`DataMemNum-1];
+	reg[`ByteWidth]  data_mem1[0:`DataMemNum-1];
+	reg[`ByteWidth]  data_mem2[0:`DataMemNum-1];
+	reg[`ByteWidth]  data_mem3[0:`DataMemNum-1];
 
+	always @ (posedge clk) begin
+		if (ce == `ChipDisable) begin
+			//data_o <= ZeroWord;
+		end else if(we == `WriteEnable) begin
+			  if (sel[3] == 1'b1) begin
+		      data_mem3[addr[`DataMemNumLog2+1:2]] <= data_i[31:24];
+		    end
+			  if (sel[2] == 1'b1) begin
+		      data_mem2[addr[`DataMemNumLog2+1:2]] <= data_i[23:16];
+		    end
+		    if (sel[1] == 1'b1) begin
+		      data_mem1[addr[`DataMemNumLog2+1:2]] <= data_i[15:8];
+		    end
+			  if (sel[0] == 1'b1) begin
+		      data_mem0[addr[`DataMemNumLog2+1:2]] <= data_i[7:0];
+		    end			   	    
+		end
+	end
+	
 	always @ (*) begin
-		if(rst == `RstEnable) begin
-			stall <= 6'b000000;
-			flush <= 1'b0;
-			new_pc <= `ZeroWord;
-		end else if(excepttype_i != `ZeroWord) begin
-		  flush <= 1'b1;
-		  stall <= 6'b000000;
-			case (excepttype_i)
-				32'h00000001:		begin   //interrupt
-					new_pc <= 32'h00000020;
-				end
-				32'h00000008:		begin   //syscall
-					new_pc <= 32'h00000040;
-				end
-				32'h0000000a:		begin   //inst_invalid
-					new_pc <= 32'h00000040;
-				end
-				32'h0000000d:		begin   //trap
-					new_pc <= 32'h00000040;
-				end
-				32'h0000000c:		begin   //ov
-					new_pc <= 32'h00000040;
-				end
-				32'h0000000e:		begin   //eret
-					new_pc <= cp0_epc_i;
-				end
-				default	: begin
-				end
-			endcase 						
-		end else if(stallreq_from_ex == `Stop) begin
-			stall <= 6'b001111;
-			flush <= 1'b0;		
-		end else if(stallreq_from_id == `Stop) begin
-			stall <= 6'b000111;	
-			flush <= 1'b0;		
+		if (ce == `ChipDisable) begin
+			data_o <= `ZeroWord;
+	  end else if(we == `WriteDisable) begin
+		    data_o <= {data_mem3[addr[`DataMemNumLog2+1:2]],
+		               data_mem2[addr[`DataMemNumLog2+1:2]],
+		               data_mem1[addr[`DataMemNumLog2+1:2]],
+		               data_mem0[addr[`DataMemNumLog2+1:2]]};
 		end else begin
-			stall <= 6'b000000;
-			flush <= 1'b0;
-			new_pc <= `ZeroWord;		
-		end    //if
-	end      //always
-			
+				data_o <= `ZeroWord;
+		end
+	end		
 
 endmodule

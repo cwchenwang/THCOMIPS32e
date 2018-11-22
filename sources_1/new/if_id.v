@@ -22,77 +22,46 @@
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
-// Module:  ctrl
-// File:    ctrl.v
+// Module:  if_id
+// File:    if_id.v
 // Author:  Lei Silei
 // E-mail:  leishangwen@163.com
-// Description: 控制模块，控制流水线的刷新、暂停等
+// Description: IF/ID阶段的寄存器
 // Revision: 1.0
 //////////////////////////////////////////////////////////////////////
 
 `include "defines.vh"
 
-module ctrl(
+module if_id(
 
+	input	wire										clk,
 	input wire										rst,
 
-	input wire[31:0]             excepttype_i,
-	input wire[`RegBus]          cp0_epc_i,
+	//来自控制模块的信息
+	input wire[5:0]               stall,	
+	input wire                    flush,
 
-	input wire                   stallreq_from_id,
-
-  //来自执行阶段的暂停请求
-	input wire                   stallreq_from_ex,
-
-	output reg[`RegBus]          new_pc,
-	output reg                   flush,	
-	output reg[5:0]              stall       
+	input wire[`InstAddrBus]			if_pc,
+	input wire[`InstBus]          if_inst,
+	output reg[`InstAddrBus]      id_pc,
+	output reg[`InstBus]          id_inst  
 	
 );
 
-
-	always @ (*) begin
-		if(rst == `RstEnable) begin
-			stall <= 6'b000000;
-			flush <= 1'b0;
-			new_pc <= `ZeroWord;
-		end else if(excepttype_i != `ZeroWord) begin
-		  flush <= 1'b1;
-		  stall <= 6'b000000;
-			case (excepttype_i)
-				32'h00000001:		begin   //interrupt
-					new_pc <= 32'h00000020;
-				end
-				32'h00000008:		begin   //syscall
-					new_pc <= 32'h00000040;
-				end
-				32'h0000000a:		begin   //inst_invalid
-					new_pc <= 32'h00000040;
-				end
-				32'h0000000d:		begin   //trap
-					new_pc <= 32'h00000040;
-				end
-				32'h0000000c:		begin   //ov
-					new_pc <= 32'h00000040;
-				end
-				32'h0000000e:		begin   //eret
-					new_pc <= cp0_epc_i;
-				end
-				default	: begin
-				end
-			endcase 						
-		end else if(stallreq_from_ex == `Stop) begin
-			stall <= 6'b001111;
-			flush <= 1'b0;		
-		end else if(stallreq_from_id == `Stop) begin
-			stall <= 6'b000111;	
-			flush <= 1'b0;		
-		end else begin
-			stall <= 6'b000000;
-			flush <= 1'b0;
-			new_pc <= `ZeroWord;		
-		end    //if
-	end      //always
-			
+	always @ (posedge clk) begin
+		if (rst == `RstEnable) begin
+			id_pc <= `ZeroWord;
+			id_inst <= `ZeroWord;
+		end else if(flush == 1'b1 ) begin
+			id_pc <= `ZeroWord;
+			id_inst <= `ZeroWord;					
+		end else if(stall[1] == `Stop && stall[2] == `NoStop) begin
+			id_pc <= `ZeroWord;
+			id_inst <= `ZeroWord;	
+	  end else if(stall[1] == `NoStop) begin
+		  id_pc <= if_pc;
+		  id_inst <= if_inst;
+		end
+	end
 
 endmodule

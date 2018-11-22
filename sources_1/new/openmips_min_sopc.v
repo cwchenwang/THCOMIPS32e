@@ -22,77 +22,79 @@
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
-// Module:  ctrl
-// File:    ctrl.v
+// Module:  openmips_min_sopc
+// File:    openmips_min_sopc.v
 // Author:  Lei Silei
 // E-mail:  leishangwen@163.com
-// Description: 控制模块，控制流水线的刷新、暂停等
+// Description: 基于OpenMIPS处理器的一个简单SOPC，用于验证具备了
+//              wishbone总线接口的openmips，该SOPC包含openmips、
+//              wb_conmax、GPIO controller、flash controller，uart 
+//              controller，以及用来仿真flash的模块flashmem，在其中
+//              存储指令，用来仿真外部ram的模块datamem，在其中存储
+//              数据，并且具有wishbone总线接口    
 // Revision: 1.0
 //////////////////////////////////////////////////////////////////////
 
 `include "defines.vh"
 
-module ctrl(
+module openmips_min_sopc(
 
-	input wire										rst,
-
-	input wire[31:0]             excepttype_i,
-	input wire[`RegBus]          cp0_epc_i,
-
-	input wire                   stallreq_from_id,
-
-  //来自执行阶段的暂停请求
-	input wire                   stallreq_from_ex,
-
-	output reg[`RegBus]          new_pc,
-	output reg                   flush,	
-	output reg[5:0]              stall       
+	input	wire										clk,
+	input wire										rst
 	
 );
 
+  //连接指令存储器
+  wire[`InstAddrBus] inst_addr;
+  wire[`InstBus] inst;
+  wire rom_ce;
+  wire mem_we_i;
+  wire[`RegBus] mem_addr_i;
+  wire[`RegBus] mem_data_i;
+  wire[`RegBus] mem_data_o;
+  wire[3:0] mem_sel_i; 
+  wire mem_ce_i;   
+  wire[5:0] int;
+  wire timer_int;
+ 
+  //assign int = {5'b00000, timer_int, gpio_int, uart_int};
+  assign int = {5'b00000, timer_int};
 
-	always @ (*) begin
-		if(rst == `RstEnable) begin
-			stall <= 6'b000000;
-			flush <= 1'b0;
-			new_pc <= `ZeroWord;
-		end else if(excepttype_i != `ZeroWord) begin
-		  flush <= 1'b1;
-		  stall <= 6'b000000;
-			case (excepttype_i)
-				32'h00000001:		begin   //interrupt
-					new_pc <= 32'h00000020;
-				end
-				32'h00000008:		begin   //syscall
-					new_pc <= 32'h00000040;
-				end
-				32'h0000000a:		begin   //inst_invalid
-					new_pc <= 32'h00000040;
-				end
-				32'h0000000d:		begin   //trap
-					new_pc <= 32'h00000040;
-				end
-				32'h0000000c:		begin   //ov
-					new_pc <= 32'h00000040;
-				end
-				32'h0000000e:		begin   //eret
-					new_pc <= cp0_epc_i;
-				end
-				default	: begin
-				end
-			endcase 						
-		end else if(stallreq_from_ex == `Stop) begin
-			stall <= 6'b001111;
-			flush <= 1'b0;		
-		end else if(stallreq_from_id == `Stop) begin
-			stall <= 6'b000111;	
-			flush <= 1'b0;		
-		end else begin
-			stall <= 6'b000000;
-			flush <= 1'b0;
-			new_pc <= `ZeroWord;		
-		end    //if
-	end      //always
-			
+ openmips openmips0(
+		.clk(clk),
+		.rst(rst),
+	
+		.rom_addr_o(inst_addr),
+		.rom_data_i(inst),
+		.rom_ce_o(rom_ce),
+
+    .int_i(int),
+
+		.ram_we_o(mem_we_i),
+		.ram_addr_o(mem_addr_i),
+		.ram_sel_o(mem_sel_i),
+		.ram_data_o(mem_data_i),
+		.ram_data_i(mem_data_o),
+		.ram_ce_o(mem_ce_i),
+		
+		.timer_int_o(timer_int)			
+	
+	);
+	
+	inst_rom inst_rom0(
+		.ce(rom_ce),
+		.addr(inst_addr),
+		.inst(inst)	
+	);
+
+	data_ram data_ram0(
+		.clk(clk),
+		.ce(mem_ce_i),
+		.we(mem_we_i),
+		.addr(mem_addr_i),
+		.sel(mem_sel_i),
+		.data_i(mem_data_i),
+		.data_o(mem_data_o)	
+	);
 
 endmodule
