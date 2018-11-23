@@ -193,14 +193,14 @@
 			<text x="41.58" y="1646.15" class="st4" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>PC</text>		</g>
 		<g id="shape18-12" v:mID="18" v:groupContext="shape" transform="translate(268.016,-1155.97)">
 			<title>文本块 8pt.18</title>
-			<desc>pc_or_addr</desc>
+			<desc>addr</desc>
 			<v:userDefs>
 				<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
 			</v:userDefs>
 			<v:textBlock v:margins="rect(2,2,2,2)" v:tabSpace="42.5197"/>
 			<v:textRect cx="36" cy="1637.15" width="72.01" height="21.2598"/>
 			<rect x="0" y="1626.52" width="72" height="21.2598" class="st2"/>
-			<text x="10" y="1640.75" class="st5" v:langID="2052"><v:paragraph v:horizAlign="2"/><v:tabList/>pc_or_addr</text>		</g>
+			<text x="46" y="1640.75" class="st5" v:langID="2052"><v:paragraph v:horizAlign="2"/><v:tabList/>addr</text>		</g>
 		<g id="shape19-15" v:mID="19" v:groupContext="shape" transform="translate(277.654,-1132.56)">
 			<title>文本块 8pt.19</title>
 			<desc>ce</desc>

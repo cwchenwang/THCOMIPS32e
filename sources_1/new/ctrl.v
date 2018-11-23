@@ -32,22 +32,20 @@
 
 `include "defines.vh"
 
-module ctrl(
+module Ctrl(
+	input wire				rst,
 
-	input wire										rst,
+	input wire[31:0]		excepttype_i,
+	input wire[`RegBus]     cp0_epc_i,
 
-	input wire[31:0]             excepttype_i,
-	input wire[`RegBus]          cp0_epc_i,
+	input wire              stallreq_from_id,
 
-	input wire                   stallreq_from_id,
+	//来自执行阶段的暂停请求
+	input wire              stallreq_from_ex,
 
-  //来自执行阶段的暂停请求
-	input wire                   stallreq_from_ex,
-
-	output reg[`RegBus]          new_pc,
-	output reg                   flush,	
-	output reg[5:0]              stall       
-	
+	output reg[`RegBus]     new_pc,
+	output reg              flush,	
+	output reg[5:0]         stall       
 );
 
 

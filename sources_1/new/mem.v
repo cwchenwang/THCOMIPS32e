@@ -32,78 +32,82 @@
 
 `include "defines.vh"
 
-module mem(
-
-	input wire										rst,
+module MEM(
+	input wire					rst,
 	
 	//来自执行阶段的信息	
-	input wire[`RegAddrBus]       wd_i,
-	input wire                    wreg_i,
-	input wire[`RegBus]					  wdata_i,
-	input wire[`RegBus]           hi_i,
-	input wire[`RegBus]           lo_i,
-	input wire                    whilo_i,	
+	input wire[`RegAddrBus]     wd_i,
+	input wire					wreg_i,
+	input wire[`RegBus]			wdata_i,
+	input wire[`RegBus]			hi_i,
+	input wire[`RegBus]			lo_i,
+	input wire					whilo_i,	
 
-  input wire[`AluOpBus]        aluop_i,
-	input wire[`RegBus]          mem_addr_i,
-	input wire[`RegBus]          reg2_i,
+    input wire[`AluOpBus]		aluop_i,
+	input wire[`RegBus]         mem_addr_i,
+	input wire[`RegBus]			reg2_i,
 	
 	//来自memory的信息
-	input wire[`RegBus]          mem_data_i,
+	input wire[`RegBus]			mem_data_i,
 
 	//LLbit_i是LLbit寄存器的值
-	input wire                  LLbit_i,
+	input wire					LLbit_i,
 	//但不一定是最新值，回写阶段可能要写LLbit，所以还要进一步判断
 	input wire                  wb_LLbit_we_i,
 	input wire                  wb_LLbit_value_i,
 
 	//协处理器CP0的写信号
-	input wire                   cp0_reg_we_i,
-	input wire[4:0]              cp0_reg_write_addr_i,
-	input wire[`RegBus]          cp0_reg_data_i,
+	input wire                  cp0_reg_we_i,
+	input wire[4:0]             cp0_reg_write_addr_i,
+	input wire[`RegBus]         cp0_reg_data_i,
 	
-	input wire[31:0]             excepttype_i,
-	input wire                   is_in_delayslot_i,
-	input wire[`RegBus]          current_inst_address_i,	
+	input wire[31:0]			excepttype_i,
+	input wire                  is_in_delayslot_i,
+	input wire[`RegBus]         current_inst_address_i,	
 	
 	//CP0的各个寄存器的值，但不一定是最新的值，要防止回写阶段指令写CP0
-	input wire[`RegBus]          cp0_status_i,
-	input wire[`RegBus]          cp0_cause_i,
-	input wire[`RegBus]          cp0_epc_i,
+	input wire[`RegBus]         cp0_status_i,
+	input wire[`RegBus]         cp0_cause_i,
+	input wire[`RegBus]         cp0_epc_i,
 
 	//回写阶段的指令是否要写CP0，用来检测数据相关
-  input wire                    wb_cp0_reg_we,
-	input wire[4:0]               wb_cp0_reg_write_addr,
-	input wire[`RegBus]           wb_cp0_reg_data,
+    input wire                  wb_cp0_reg_we,
+	input wire[4:0]             wb_cp0_reg_write_addr,
+	input wire[`RegBus]         wb_cp0_reg_data,
+	
+	// Structural conflict
+	input wire					ld_src_i,
+	
+	// Structural conflict
+	output reg					ld_src_o,
 	
 	//送到回写阶段的信息
-	output reg[`RegAddrBus]      wd_o,
-	output reg                   wreg_o,
-	output reg[`RegBus]					 wdata_o,
-	output reg[`RegBus]          hi_o,
-	output reg[`RegBus]          lo_o,
-	output reg                   whilo_o,
+	output reg[`RegAddrBus]		wd_o,
+	output reg					wreg_o,
+	output reg[`RegBus]			wdata_o,
+	output reg[`RegBus]			hi_o,
+	output reg[`RegBus]			lo_o,
+	output reg					whilo_o,
 
-	output reg                   LLbit_we_o,
-	output reg                   LLbit_value_o,
+	output reg					LLbit_we_o,
+	output reg					LLbit_value_o,
 
-	output reg                   cp0_reg_we_o,
-	output reg[4:0]              cp0_reg_write_addr_o,
-	output reg[`RegBus]          cp0_reg_data_o,
+	output reg					cp0_reg_we_o,
+	output reg[4:0]				cp0_reg_write_addr_o,
+	output reg[`RegBus]			cp0_reg_data_o,
 	
 	//送到memory的信息
-	output reg[`RegBus]          mem_addr_o,
-	output wire									 mem_we_o,
-	output reg[3:0]              mem_sel_o,
-	output reg[`RegBus]          mem_data_o,
-	output reg                   mem_ce_o,
+	output reg[`RegBus]			mem_addr_o,
+	output wire					mem_we_o,
+	output reg[3:0]             mem_sel_o,
+	output reg[`RegBus]         mem_data_o,
+	output reg					mem_ce_o,
 	
-	output reg[31:0]             excepttype_o,
-	output wire[`RegBus]          cp0_epc_o,
-	output wire                  is_in_delayslot_o,
+	output reg[31:0]            excepttype_o,
+	output wire[`RegBus]        cp0_epc_o,
+	output wire                 is_in_delayslot_o,
 	
-	output wire[`RegBus]         current_inst_address_o		
-	
+	output wire[`RegBus]        current_inst_address_o		
 );
 
   reg LLbit;
@@ -119,6 +123,11 @@ module mem(
 	assign is_in_delayslot_o = is_in_delayslot_i;
 	assign current_inst_address_o = current_inst_address_i;
 	assign cp0_epc_o = cp0_epc;
+	
+	// Added for structural conflict
+	always @(*) begin
+        ld_src_o <= ld_src_i;	
+	end
 
   //获取最新的LLbit的值
 	always @ (*) begin

@@ -33,15 +33,13 @@
 `include "defines.vh"
 
 module data_ram(
-
-	input	wire										clk,
-	input wire										ce,
-	input wire										we,
-	input wire[`DataAddrBus]			addr,
-	input wire[3:0]								sel,
-	input wire[`DataBus]						data_i,
-	output reg[`DataBus]					data_o
-	
+	input wire					clk,
+	input wire					ce,
+	input wire					we,
+	input wire[`DataAddrBus]	addr,
+	input wire[3:0]				sel,
+	input wire[`DataBus]		data_i,
+	output reg[`DataBus]		data_o
 );
 
 	reg[`ByteWidth]  data_mem0[0:`DataMemNum-1];

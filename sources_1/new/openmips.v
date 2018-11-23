@@ -33,26 +33,24 @@
 `include "defines.vh"
 
 module openmips(
-
-	input	wire										clk,
-	input wire										rst,
+	input wire					clk,
+	input wire					rst,
 	
-  input wire[5:0]                int_i,
+	input wire[5:0]				int_i,
   
-	input wire[`RegBus]           rom_data_i,
-	output wire[`RegBus]           rom_addr_o,
-	output wire                    rom_ce_o,
+	input wire[`RegBus]			rom_data_i,
+	output wire[`RegBus]        rom_addr_o,
+	output wire                 rom_ce_o,
 	
-  //连接数据存储器data_ram
-	input wire[`RegBus]           ram_data_i,
-	output wire[`RegBus]           ram_addr_o,
-	output wire[`RegBus]           ram_data_o,
-	output wire                    ram_we_o,
-	output wire[3:0]               ram_sel_o,
-	output wire[3:0]               ram_ce_o,
+	//连接数据存储器data_ram
+	input wire[`RegBus]			ram_data_i,
+	output wire[`RegBus]        ram_addr_o,
+	output wire[`RegBus]        ram_data_o,
+	output wire                 ram_we_o,
+	output wire[3:0]            ram_sel_o,
+	output wire[3:0]            ram_ce_o,
 	
-	output wire                    timer_int_o
-	
+	output wire                 timer_int_o
 );
 
 	wire[`InstAddrBus] pc;
@@ -207,23 +205,23 @@ module openmips(
   wire[`RegBus] latest_epc;
   
   //pc_reg例化
-	pc_reg pc_reg0(
+	PC pc_reg0(
 		.clk(clk),
 		.rst(rst),
 		.stall(stall),
 		.flush(flush),
-	  .new_pc(new_pc),
+	    .new_pc(new_pc),
 		.branch_flag_i(id_branch_flag_o),
 		.branch_target_address_i(branch_target_address),		
-		.pc(pc),
-		.ce(rom_ce_o)	
-			
+		.addr(pc),
+		.ce(rom_ce_o),	
+	   .rom_op_i(`PC_ROM_OP_INST)
 	);
 	
   assign rom_addr_o = pc;
 
   //IF/ID模块例化
-	if_id if_id0(
+	IF_ID if_id0(
 		.clk(clk),
 		.rst(rst),
 		.stall(stall),
@@ -235,7 +233,7 @@ module openmips(
 	);
 	
 	//译码阶段ID模块
-	id id0(
+	ID id0(
 		.rst(rst),
 		.pc_i(id_pc_i),
 		.inst_i(id_inst_i),
@@ -286,7 +284,7 @@ module openmips(
 	);
 
   //通用寄存器Regfile例化
-	regfile regfile1(
+	RegFile regfile1(
 		.clk (clk),
 		.rst (rst),
 		.we	(wb_wreg_i),
@@ -301,7 +299,7 @@ module openmips(
 	);
 
 	//ID/EX模块
-	id_ex id_ex0(
+	ID_EX id_ex0(
 		.clk(clk),
 		.rst(rst),
 		
@@ -338,7 +336,7 @@ module openmips(
 	);		
 	
 	//EX模块
-	ex ex0(
+	EX ex0(
 		.rst(rst),
 	
 		//送到执行阶段EX模块的信息
@@ -419,7 +417,7 @@ module openmips(
 	);
 
   //EX/MEM模块
-  ex_mem ex_mem0(
+  EX_MEM ex_mem0(
 		.clk(clk),
 		.rst(rst),
 	  
@@ -475,7 +473,7 @@ module openmips(
 	);
 	
   //MEM模块例化
-	mem mem0(
+	MEM mem0(
 		.rst(rst),
 	
 		//来自EX/MEM模块的信息	
@@ -545,7 +543,7 @@ module openmips(
 	);
 
   //MEM/WB模块
-	mem_wb mem_wb0(
+	MEM_WB mem_wb0(
 		.clk(clk),
 		.rst(rst),
 
@@ -598,7 +596,7 @@ module openmips(
 		.lo_o(lo)	
 	);
 	
-	ctrl ctrl0(
+	Ctrl ctrl0(
 		.rst(rst),
 	
 	  .excepttype_i(mem_excepttype_o),
@@ -641,7 +639,7 @@ module openmips(
 	
 	);
 
-	cp0_reg cp0_reg0(
+	CP0 cp0_reg0(
 		.clk(clk),
 		.rst(rst),
 		

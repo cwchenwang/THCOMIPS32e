@@ -8,6 +8,7 @@ module PC(
     // From CTRL
     input wire flush,
     input wire[5:0] stall,  // Changed from wire to wire[5:0]
+    input wire[`InstAddrBus] new_pc,    // Necessary??
     
     // From ID
     input wire branch_flag_i,
@@ -19,16 +20,16 @@ module PC(
     input wire[`InstAddrBus] rom_rw_addr_i,
     
     // To ROM
-    output reg[`InstAddrBus] pc_or_addr,
+    output reg[`InstAddrBus] addr,
     output reg ce,
     output reg rom_op_o,
     output reg[`DataBus] wr_data_o
 );
 
-    // After we assign rom_rw_addr_i to pc_or_addr, we need to be able to 
+    // After we assign rom_rw_addr_i to addr, we need to be able to 
     // switch back to the real PC. Hence the following two variables. 
-    reg[`InstAddrBus] pc;  
-    wire[`InstAddrBus] pc_plus_4 = pc + 4;
+    reg[`InstAddrBus] m_pc;  
+    wire[`InstAddrBus] m_pc_plus_4 = m_pc + 4;
     
     // Resolve wr_data_o and rom_op_o
     always @(*) begin
@@ -45,27 +46,30 @@ module PC(
         end
     end
 
-    // Resolve pc_or_addr and update pc.
-    always @(posedge clk) begin
-        if (rst == `RstEnable) begin
-            pc <= 0;
-            pc_or_addr <= 0;
+    // Resolve addr and update m_pc.
+    always @(posedge clk) begin        
+        if (ce == `ChipDisable) begin
+            addr <= 0;
+            m_pc <= 0;
+        end else if (flush) begin
+            addr <= new_pc;
+            m_pc <= new_pc;
         end else if (stall[0] == `NoStop) begin 
             // Priority of stall is higher than read / write from ROM!!
             case (rom_op_i)
             `PC_ROM_OP_READ: begin
-                pc_or_addr <= rom_rw_addr_i;
+                addr <= rom_rw_addr_i;
             end
             `PC_ROM_OP_WRITE: begin
-                pc_or_addr <= rom_rw_addr_i;
+                addr <= rom_rw_addr_i;
             end
             default: begin
                 if (branch_flag_i == `Branch) begin
-                    pc_or_addr <= branch_target_address_i;
-                    pc <= branch_target_address_i;
+                    addr <= branch_target_address_i;
+                    m_pc <= branch_target_address_i;
                 end else begin
-                    pc_or_addr <= pc_plus_4;
-                    pc <= pc_plus_4;
+                    addr <= m_pc_plus_4;
+                    m_pc <= m_pc_plus_4;
                 end
             end
             endcase

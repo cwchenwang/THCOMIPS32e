@@ -38,10 +38,8 @@
 `include "defines.vh"
 
 module openmips_min_sopc(
-
-	input	wire										clk,
-	input wire										rst
-	
+	input wire clk,
+	input wire rst
 );
 
   //Á¬½ÓÖ¸Áî´æ´¢Æ÷

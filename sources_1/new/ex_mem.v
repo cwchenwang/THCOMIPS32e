@@ -32,64 +32,67 @@
 
 `include "defines.vh"
 
-module ex_mem(
-
-	input	wire										clk,
-	input wire										rst,
+module EX_MEM(
+	input wire clk,
+	input wire	rst,
 
 	//来自控制模块的信息
-	input wire[5:0]							 stall,	
-	input wire                   flush,
+	input wire[5:0] stall,	
+	input wire flush,
 	
 	//来自执行阶段的信息	
-	input wire[`RegAddrBus]       ex_wd,
-	input wire                    ex_wreg,
-	input wire[`RegBus]					 ex_wdata, 	
-	input wire[`RegBus]           ex_hi,
-	input wire[`RegBus]           ex_lo,
-	input wire                    ex_whilo, 	
+	input wire[`RegAddrBus] ex_wd,
+	input wire ex_wreg,
+	input wire[`RegBus] ex_wdata, 	
+	input wire[`RegBus] ex_hi,
+	input wire[`RegBus] ex_lo,
+	input wire ex_whilo, 	
 
-  //为实现加载、访存指令而添加
-  input wire[`AluOpBus]        ex_aluop,
-	input wire[`RegBus]          ex_mem_addr,
-	input wire[`RegBus]          ex_reg2,
+    //为实现加载、访存指令而添加
+    input wire[`AluOpBus] ex_aluop,
+	input wire[`RegBus] ex_mem_addr,
+	input wire[`RegBus] ex_reg2,
 
-	input wire[`DoubleRegBus]     hilo_i,	
-	input wire[1:0]               cnt_i,	
+	input wire[`DoubleRegBus] hilo_i,	
+	input wire[1:0] cnt_i,	
 
-	input wire                   ex_cp0_reg_we,
-	input wire[4:0]              ex_cp0_reg_write_addr,
-	input wire[`RegBus]          ex_cp0_reg_data,	
+	input wire ex_cp0_reg_we,
+	input wire[4:0] ex_cp0_reg_write_addr,
+	input wire[`RegBus] ex_cp0_reg_data,	
 
-  input wire[31:0]             ex_excepttype,
-	input wire                   ex_is_in_delayslot,
-	input wire[`RegBus]          ex_current_inst_address,
+    input wire[31:0] ex_excepttype,
+	input wire ex_is_in_delayslot,
+	input wire[`RegBus] ex_current_inst_address,
+	
+	// Added for structural conflict
+	input wire ld_src_i,
+	
+	// Added for structural conflict
+	output reg ld_src_o,
 	
 	//送到访存阶段的信息
-	output reg[`RegAddrBus]      mem_wd,
-	output reg                   mem_wreg,
-	output reg[`RegBus]					 mem_wdata,
-	output reg[`RegBus]          mem_hi,
-	output reg[`RegBus]          mem_lo,
-	output reg                   mem_whilo,
+	output reg[`RegAddrBus] mem_wd,
+	output reg mem_wreg,
+	output reg[`RegBus] mem_wdata,
+	output reg[`RegBus] mem_hi,
+	output reg[`RegBus] mem_lo,
+	output reg mem_whilo,
 
-  //为实现加载、访存指令而添加
-  output reg[`AluOpBus]        mem_aluop,
-	output reg[`RegBus]          mem_mem_addr,
-	output reg[`RegBus]          mem_reg2,
+    //为实现加载、访存指令而添加
+    output reg[`AluOpBus] mem_aluop,
+	output reg[`RegBus] mem_mem_addr,
+	output reg[`RegBus] mem_reg2,
 	
-	output reg                   mem_cp0_reg_we,
-	output reg[4:0]              mem_cp0_reg_write_addr,
-	output reg[`RegBus]          mem_cp0_reg_data,
+	output reg mem_cp0_reg_we,
+	output reg[4:0] mem_cp0_reg_write_addr,
+	output reg[`RegBus] mem_cp0_reg_data,
 	
-	output reg[31:0]            mem_excepttype,
-  output reg                  mem_is_in_delayslot,
-	output reg[`RegBus]         mem_current_inst_address,
+	output reg[31:0] mem_excepttype,
+    output reg mem_is_in_delayslot,
+	output reg[`RegBus] mem_current_inst_address,
 		
-	output reg[`DoubleRegBus]    hilo_o,
-	output reg[1:0]              cnt_o	
-	
-	
+	output reg[`DoubleRegBus] hilo_o,
+	output reg[1:0] cnt_o	
 );
 
 

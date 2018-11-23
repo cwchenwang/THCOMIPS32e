@@ -32,7 +32,7 @@
 
 `include "defines.vh"
 
-module id_ex(
+module ID_EX(
 
 	input	wire										clk,
 	input wire										rst,

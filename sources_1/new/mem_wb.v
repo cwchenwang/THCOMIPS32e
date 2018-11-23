@@ -32,44 +32,48 @@
 
 `include "defines.vh"
 
-module mem_wb(
+module MEM_WB(
 
-	input	wire										clk,
-	input wire										rst,
+	input wire					clk,
+	input wire					rst,
 
-  //来自控制模块的信息
-	input wire[5:0]               stall,	
-  input wire                    flush,	
+    //来自控制模块的信息
+	input wire[5:0]             stall,	
+    input wire                  flush,	
+    
+    // Structural conflict
+    input wire                  ld_src,
+    input wire[`DataBus]		rom_data,
+    
 	//来自访存阶段的信息	
-	input wire[`RegAddrBus]       mem_wd,
-	input wire                    mem_wreg,
-	input wire[`RegBus]					 mem_wdata,
-	input wire[`RegBus]           mem_hi,
-	input wire[`RegBus]           mem_lo,
-	input wire                    mem_whilo,	
+	input wire[`RegAddrBus]     mem_wd,
+	input wire                  mem_wreg,
+	input wire[`RegBus]			mem_wdata,
+	input wire[`RegBus]         mem_hi,
+	input wire[`RegBus]         mem_lo,
+	input wire                  mem_whilo,	
 	
 	input wire                  mem_LLbit_we,
 	input wire                  mem_LLbit_value,	
 
-	input wire                   mem_cp0_reg_we,
-	input wire[4:0]              mem_cp0_reg_write_addr,
-	input wire[`RegBus]          mem_cp0_reg_data,			
+	input wire					mem_cp0_reg_we,
+	input wire[4:0]				mem_cp0_reg_write_addr,
+	input wire[`RegBus]			mem_cp0_reg_data,			
 
 	//送到回写阶段的信息
-	output reg[`RegAddrBus]      wb_wd,
-	output reg                   wb_wreg,
-	output reg[`RegBus]					 wb_wdata,
-	output reg[`RegBus]          wb_hi,
-	output reg[`RegBus]          wb_lo,
-	output reg                   wb_whilo,
+	output reg[`RegAddrBus]		wb_wd,
+	output reg					wb_wreg,
+	output reg[`RegBus]			wb_wdata,
+	output reg[`RegBus]			wb_hi,
+	output reg[`RegBus]			wb_lo,
+	output reg					wb_whilo,
 
 	output reg                  wb_LLbit_we,
 	output reg                  wb_LLbit_value,
 
-	output reg                   wb_cp0_reg_we,
-	output reg[4:0]              wb_cp0_reg_write_addr,
-	output reg[`RegBus]          wb_cp0_reg_data								       
-	
+	output reg					wb_cp0_reg_we,
+	output reg[4:0]				wb_cp0_reg_write_addr,
+	output reg[`RegBus]			wb_cp0_reg_data								       
 );
 
 
