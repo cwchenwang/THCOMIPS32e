@@ -41,7 +41,7 @@ module THCOMIPS32e(
     // Instruction memory
 	output wire[`RegBus]        rom_addr_o,
 	output wire                 rom_ce_o,
-	output wire                rom_op_o,
+	output wire                rom_we_o,
 	output wire[`RegBus]       rom_wr_data_o,                 
 	input wire[`RegBus]			rom_data_i,
 	
@@ -222,8 +222,8 @@ module THCOMIPS32e(
 		
 		.addr_o(pc),
 		.ce_o(rom_ce_o),
-		.op_o(rom_op_o),
-		.wr_data_o(rom_wr_data_o)	
+		.we_o(rom_we_o),
+		.data_o(rom_wr_data_o)	
 	);
 	
   assign rom_addr_o = pc;

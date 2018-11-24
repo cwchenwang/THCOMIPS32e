@@ -1,4 +1,7 @@
+// Module ROMWrapper that adapts SRAM signals as declared in thinpad_top.v
+// to a ROM module.
 // Author: LYL
+// Created on: 2018/11/23
 
 `timescale 1ns / 1ps
 `include "defines.vh"
@@ -16,13 +19,14 @@ module ROMWrapper(
 	output reg[`InstBus] data_o,
 	
 	// Adaptee
-	inout wire[`InstBus] ram_data,  // RAM数据
+	inout wire[`InstBus] ram_data, // RAM数据
     output reg[19:0] ram_addr,		// RAM地址
     output reg[3:0] ram_be_n,		// RAM字节使能，低有效。如果不使用字节使能，请保持为0
     output reg ram_ce_n,			// RAM片选，低有效
     output reg ram_oe_n,			// RAM读使能，低有效
     output reg ram_we_n				// RAM写使能，低有效
 );
+    
     // Tri-state
     assign ram_data = (ce_i == `ChipEnable && op_i == `ROM_OP_WRITE) ? wr_data_i : {`InstWidth{1'bz}};
     

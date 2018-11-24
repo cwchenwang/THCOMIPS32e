@@ -1,3 +1,7 @@
+// Module PC with structural conflict signals
+// Author: LYL
+// Created on: 2018/11/22
+
 `timescale 1ns / 1ps
 `include "defines.vh"
 
@@ -7,23 +11,23 @@ module PC(
     
     // From CTRL
     input wire flush,
-    input wire[5:0] stall,  // Changed from wire to wire[5:0]
-    input wire[`InstAddrBus] new_pc,    // Necessary??
+    input wire[5:0] stall,  // TODO: maybe not all 6 bits are necessary
+    input wire[`InstAddrBus] new_pc,    
     
     // From ID
     input wire branch_flag_i,
-    input wire[`InstAddrBus] branch_target_address_i,    // Changed from RegAddrBus to InstAddrBus
+    input wire[`InstAddrBus] branch_target_address_i,    
     
     // From EX
     input wire[1:0] rom_op_i,
-    input wire[`DataBus] rom_wr_data_i,
+    input wire[`InstBus] rom_wr_data_i,
     input wire[`InstAddrBus] rom_rw_addr_i,
     
     // To ROM
     output reg[`InstAddrBus] addr_o,
     output reg ce_o,
-    output reg op_o,
-    output reg[`DataBus] wr_data_o
+    output reg we_o,
+    output reg[`InstBus] data_o
 );
 
     // After we assign rom_rw_addr_i to addr_o, we need to be able to 
@@ -31,10 +35,10 @@ module PC(
     reg[`InstAddrBus] m_pc;  
     wire[`InstAddrBus] m_pc_plus_4 = m_pc + 4;
     
-    // Resolve wr_data_o and rom_op_o
+    // Resolve data_o and rom_op_o
     always @(*) begin
-        wr_data_o <= rom_wr_data_i;    
-        op_o <= rom_op_i == `PC_ROM_OP_WRITE ? `ROM_OP_WRITE : `ROM_OP_READ;
+        data_o <= rom_wr_data_i;    
+        we_o <= rom_op_i == `PC_ROM_OP_WRITE ? `WriteEnable : `WriteDisable;
     end
 
     // Resolve ce_o

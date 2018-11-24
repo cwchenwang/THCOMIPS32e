@@ -40,22 +40,24 @@ wire flash_we_n;         //Flash写使能信号，低有效
 wire flash_byte_n;       //Flash 8bit模式选择，低有效。在使用flash的16位模式时请设为1
 
 //Windows需要注意路径分隔符的转义，例如"D:\\foo\\bar.bin"
-parameter BASE_RAM_INIT_FILE = "/tmp/main.bin"; //BaseRAM初始化文件，请修改为实际的绝对路径
-parameter EXT_RAM_INIT_FILE = "/tmp/eram.bin";    //ExtRAM初始化文件，请修改为实际的绝对路径
-parameter FLASH_INIT_FILE = "/tmp/kernel.elf";    //Flash初始化文件，请修改为实际的绝对路径
+localparam BASE_RAM_INIT_FILE = "/tmp/main.bin"; //BaseRAM初始化文件，请修改为实际的绝对路径
+localparam EXT_RAM_INIT_FILE = "inst_rom.data";    //ExtRAM初始化文件，请修改为实际的绝对路径
+localparam FLASH_INIT_FILE = "/tmp/kernel.elf";    //Flash初始化文件，请修改为实际的绝对路径
 
 assign rxd = 1'b1; //idle state
 
 initial begin 
     //在这里可以自定义测试输入序列，例如：
     dip_sw = 32'h2;
-    touch_btn = 0;
-    for (integer i = 0; i < 20; i = i++) begin
-        #100; //等待100ns
-        clock_btn = 1; //按下手工时钟按钮
-        #100; //等待100ns
-        clock_btn = 0; //松开手工时钟按钮
-    end
+//    touch_btn = 0;
+//    for (integer i = 0; i < 20; i = i++) begin
+//        #100; //等待100ns
+//        clock_btn = 1; //按下手工时钟按钮
+//        #100; //等待100ns
+//        clock_btn = 0; //松开手工时钟按钮
+//    end
+    reset_btn = 1;
+    #195 reset_btn = 0;
 end
 
 thinpad_top dut(
@@ -170,24 +172,48 @@ initial begin
     end
 end
 
-initial begin 
+//initial begin 
+//    reg [31:0] tmp_array[0:1048575];
+//    integer n_File_ID, n_Init_Size;
+//    n_File_ID = $fopen(EXT_RAM_INIT_FILE, "rb");
+//    if(!n_File_ID)begin 
+//        n_Init_Size = 0;
+//        $display("Failed to open ExtRAM init file");
+//    end else begin
+//        n_Init_Size = $fread(tmp_array, n_File_ID);
+//        n_Init_Size /= 4;
+//        $fclose(n_File_ID);
+//    end
+//    $display("ExtRAM Init Size(words): %d",n_Init_Size);
+//    for (integer i = 0; i < n_Init_Size; i++) begin
+//        ext1.mem_array0[i] = tmp_array[i][24+:8];
+//        ext1.mem_array1[i] = tmp_array[i][16+:8];
+//        ext2.mem_array0[i] = tmp_array[i][8+:8];
+//        ext2.mem_array1[i] = tmp_array[i][0+:8];
+//    end
+    
+//    for (integer i = 0; i != n_Init_Size; ++i) begin
+//        $display ("ROM[%h]: %h", i, tmp_array[i]);    
+//    end
+//end
+
+initial begin
     reg [31:0] tmp_array[0:1048575];
-    integer n_File_ID, n_Init_Size;
-    n_File_ID = $fopen(EXT_RAM_INIT_FILE, "rb");
-    if(!n_File_ID)begin 
-        n_Init_Size = 0;
-        $display("Failed to open ExtRAM init file");
-    end else begin
-        n_Init_Size = $fread(tmp_array, n_File_ID);
-        n_Init_Size /= 4;
-        $fclose(n_File_ID);
-    end
-    $display("ExtRAM Init Size(words): %d",n_Init_Size);
-    for (integer i = 0; i < n_Init_Size; i++) begin
-        ext1.mem_array0[i] = tmp_array[i][24+:8];
-        ext1.mem_array1[i] = tmp_array[i][16+:8];
-        ext2.mem_array0[i] = tmp_array[i][8+:8];
-        ext2.mem_array1[i] = tmp_array[i][0+:8];
-    end
+    integer size;
+    
+    $readmemh ( "inst_rom_8_3.data", tmp_array);
+    
+    // Note the endian /_ \
+    size = 1024;
+    for (integer i = 0; i < size; i++) begin
+         ext1.mem_array0[i] = tmp_array[i][0+:8];
+         ext1.mem_array1[i] = tmp_array[i][8+:8];
+         ext2.mem_array0[i] = tmp_array[i][16+:8];
+         ext2.mem_array1[i] = tmp_array[i][24+:8];
+     end
+     
+//     for (integer i = 0; i != size; ++i) begin
+//         $display ("ROM[%h]: %h", i, tmp_array[i]);    
+//     end
 end
 endmodule

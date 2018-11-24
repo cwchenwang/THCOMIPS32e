@@ -1,10 +1,11 @@
-// Testbench for ROMWrapper.
+// Testbench for RAMWrapper.
 // Author: LYL 
+// Craeted on: 2018/11/23
 
 `timescale 1ns / 1ps
 `include "../../sources_1/new/defines.vh"
 
-module ROMWrapperTest();
+module RAMWrapperTest();
     localparam half_cycle = 10;
     localparam cycle = 2 * half_cycle;
 
@@ -13,7 +14,7 @@ module ROMWrapperTest();
     // Adapter
     reg[`InstAddrBus] inst_addr;
     reg rom_ce;
-    reg rom_op;
+    reg rom_we;
     reg[`InstBus] rom_wr_data;
     wire[`InstBus] inst;
     
@@ -47,12 +48,13 @@ module ROMWrapperTest();
         .UB_n(base_ram_be_n[3])
     );
                 
-    ROMWrapper rom_wrapper(
+    RAMWrapper wrapper(
         .clk(clk),
         .addr_i(inst_addr),
         .ce_i(rom_ce),
-        .op_i(rom_op),
-        .wr_data_i(rom_wr_data),
+        .we_i(rom_we),
+        .data_i(rom_wr_data),
+        .sel_i(4'b1111),    
         .data_o(inst),
         
         .ram_data(base_ram_data),
@@ -63,7 +65,7 @@ module ROMWrapperTest();
         .ram_we_n(base_ram_we_n)
     );
     
-        initial begin
+    initial begin
         clk = 1;
         forever #half_cycle clk = !clk;
     end
@@ -73,30 +75,30 @@ module ROMWrapperTest();
         rom_ce = 1;
         rom_wr_data = ~0;
         inst_addr = ~0;    
-        rom_op = `ROM_OP_WRITE;
+        rom_we = `WriteEnable;
         #(cycle * 1)
-        rom_op = `ROM_OP_READ;
+        rom_we = `WriteDisable;
         #(cycle * 1);
         
         // Write sequentially then read backwords
         inst_addr = 0;
         rom_wr_data = 0;
         
-        rom_op = `ROM_OP_WRITE;
+        rom_we = `WriteEnable;
         for (count = 0; count != 4; count = count + 1) begin
             #cycle;
             inst_addr = inst_addr + 4;
             rom_wr_data = rom_wr_data + 1;
         end
         
-        rom_op = `ROM_OP_READ;
+        rom_we = `WriteDisable;
         for (count = 0; count != 4; count = count + 1) begin
             inst_addr = inst_addr - 4;
             #cycle;
         end
         
         // Write sequentially and read in the same order
-        rom_op = `ROM_OP_WRITE;
+        rom_we = `WriteEnable;
         inst_addr = 0;
         rom_wr_data = 0;
         for (count = 0; count != 4; count = count + 1) begin
@@ -105,7 +107,7 @@ module ROMWrapperTest();
             rom_wr_data = rom_wr_data + 1;
         end
         
-        rom_op = `ROM_OP_READ;
+        rom_we = `WriteDisable;
         inst_addr = inst_addr - 16;
         for (count = 0; count != 4; count = count + 1) begin
             #cycle;
@@ -113,12 +115,12 @@ module ROMWrapperTest();
         end
         
         // Raed after write
-        rom_op = `ROM_OP_WRITE;
+        rom_we = `WriteEnable;
         inst_addr = 'h1000;
         rom_wr_data = 'h2333;
         #cycle;
         
-        rom_op = `ROM_OP_READ;
+        rom_we = `WriteDisable;
         #cycle;
                 
         $stop;

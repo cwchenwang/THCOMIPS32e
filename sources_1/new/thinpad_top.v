@@ -1,4 +1,6 @@
 `default_nettype none
+`timescale 1ns / 1ps
+`include "defines.vh"
 
 module thinpad_top(
     input wire clk_50M,           //50MHz 时钟输入
@@ -80,107 +82,193 @@ module thinpad_top(
     output wire video_de           //行数据有效信号，用于区分消隐区
 );
 
-
-/* =========== Demo code begin =========== */
-
-// PLL分频示例
-wire locked, clk_10M, clk_20M;
-//pll_example clock_gen 
-// (
-//  // Clock out ports
-//  .clk_out1(clk_10M), // 时钟输出1，频率在IP配置界面中设置
-//  .clk_out2(clk_20M), // 时钟输出2，频率在IP配置界面中设置
-//  // Status and control signals
-//  .reset(reset_btn), // PLL复位输入
-//  .locked(locked), // 锁定输出，"1"表示时钟稳定，可作为后级电路复位
-// // Clock in ports
-//  .clk_in1(clk_50M) // 外部时钟输入
-// );
-
-reg reset_of_clk10M;
-// 异步复位，同步释放
-always@(posedge clk_10M or negedge locked) begin
-    if(~locked) reset_of_clk10M <= 1'b1;
-    else        reset_of_clk10M <= 1'b0;
-end
-
-always@(posedge clk_10M or posedge reset_of_clk10M) begin
-    if(reset_of_clk10M)begin
-        // Your Code
+    /* =========== Demo code begin =========== */
+    
+    //// PLL分频示例
+    //wire locked, clk_10M, clk_20M;
+    //pll_example clock_gen 
+    // (
+    //  // Clock out ports
+    //  .clk_out1(clk_10M), // 时钟输出1，频率在IP配置界面中设置
+    //  .clk_out2(clk_20M), // 时钟输出2，频率在IP配置界面中设置
+    //  // Status and control signals
+    //  .reset(reset_btn), // PLL复位输入
+    //  .locked(locked), // 锁定输出，"1"表示时钟稳定，可作为后级电路复位
+    // // Clock in ports
+    //  .clk_in1(clk_50M) // 外部时钟输入
+    // );
+    
+    //reg reset_of_clk10M;
+    //// 异步复位，同步释放
+    //always@(posedge clk_10M or negedge locked) begin
+    //    if(~locked) reset_of_clk10M <= 1'b1;
+    //    else        reset_of_clk10M <= 1'b0;
+    //end
+    
+    //always@(posedge clk_10M or posedge reset_of_clk10M) begin
+    //    if(reset_of_clk10M)begin
+    //        // Your Code
+    //    end
+    //    else begin
+    //        // Your Code
+    //    end
+    //end
+    
+    // 数码管连接关系示意图，dpy1同理
+    // p=dpy0[0] // ---a---
+    // c=dpy0[1] // |     |
+    // d=dpy0[2] // f     b
+    // e=dpy0[3] // |     |
+    // b=dpy0[4] // ---g---
+    // a=dpy0[5] // |     |
+    // f=dpy0[6] // e     c
+    // g=dpy0[7] // |     |
+    //           // ---d---  p
+    
+    
+    //直连串口接收发送演示，从直连串口收到的数据再发送出去
+    wire [7:0] ext_uart_rx;
+    reg  [7:0] ext_uart_buffer, ext_uart_tx;
+    wire ext_uart_ready, ext_uart_busy;
+    reg ext_uart_start, ext_uart_avai;
+    
+    async_receiver #(.ClkFrequency(50000000),.Baud(9600)) //接收模块，9600无检验位
+        ext_uart_r(
+            .clk(clk_50M),                       //外部时钟信号
+            .RxD(rxd),                           //外部串行信号输入
+            .RxD_data_ready(ext_uart_ready),  //数据接收到标志
+            .RxD_clear(ext_uart_ready),       //清除接收标志
+            .RxD_data(ext_uart_rx)             //接收到的一字节数据
+        );
+        
+    always @(posedge clk_50M) begin //接收到缓冲区ext_uart_buffer
+        if(ext_uart_ready)begin
+            ext_uart_buffer <= ext_uart_rx;
+            ext_uart_avai <= 1;
+        end else if(!ext_uart_busy && ext_uart_avai)begin 
+            ext_uart_avai <= 0;
+        end
     end
-    else begin
-        // Your Code
+    always @(posedge clk_50M) begin //将缓冲区ext_uart_buffer发送出去
+        if(!ext_uart_busy && ext_uart_avai)begin 
+            ext_uart_tx <= ext_uart_buffer;
+            ext_uart_start <= 1;
+        end else begin 
+            ext_uart_start <= 0;
+        end
     end
-end
-
-// 数码管连接关系示意图，dpy1同理
-// p=dpy0[0] // ---a---
-// c=dpy0[1] // |     |
-// d=dpy0[2] // f     b
-// e=dpy0[3] // |     |
-// b=dpy0[4] // ---g---
-// a=dpy0[5] // |     |
-// f=dpy0[6] // e     c
-// g=dpy0[7] // |     |
-//           // ---d---  p
-
-
-//直连串口接收发送演示，从直连串口收到的数据再发送出去
-wire [7:0] ext_uart_rx;
-reg  [7:0] ext_uart_buffer, ext_uart_tx;
-wire ext_uart_ready, ext_uart_busy;
-reg ext_uart_start, ext_uart_avai;
-
-async_receiver #(.ClkFrequency(50000000),.Baud(9600)) //接收模块，9600无检验位
-    ext_uart_r(
-        .clk(clk_50M),                       //外部时钟信号
-        .RxD(rxd),                           //外部串行信号输入
-        .RxD_data_ready(ext_uart_ready),  //数据接收到标志
-        .RxD_clear(ext_uart_ready),       //清除接收标志
-        .RxD_data(ext_uart_rx)             //接收到的一字节数据
+    
+    async_transmitter #(.ClkFrequency(50000000),.Baud(9600)) //发送模块，9600无检验位
+        ext_uart_t(
+            .clk(clk_50M),                  //外部时钟信号
+            .TxD(txd),                      //串行信号输出
+            .TxD_busy(ext_uart_busy),       //发送器忙状态指示
+            .TxD_start(ext_uart_start),    //开始发送信号
+            .TxD_data(ext_uart_tx)        //待发送的数据
+        );
+    
+    //图像输出演示，分辨率800x600@75Hz，像素时钟为50MHz
+    wire [11:0] hdata;
+    assign video_red = hdata < 266 ? 3'b111 : 0; //红色竖条
+    assign video_green = hdata < 532 && hdata >= 266 ? 3'b111 : 0; //绿色竖条
+    assign video_blue = hdata >= 532 ? 2'b11 : 0; //蓝色竖条
+    assign video_clk = clk_50M;
+    vga #(12, 800, 856, 976, 1040, 600, 637, 643, 666, 1, 1) vga800x600at75 (
+        .clk(clk_50M), 
+        .hdata(hdata), //横坐标
+        .vdata(),      //纵坐标
+        .hsync(video_hsync),
+        .vsync(video_vsync),
+        .data_enable(video_de)
     );
     
-always @(posedge clk_50M) begin //接收到缓冲区ext_uart_buffer
-    if(ext_uart_ready)begin
-        ext_uart_buffer <= ext_uart_rx;
-        ext_uart_avai <= 1;
-    end else if(!ext_uart_busy && ext_uart_avai)begin 
-        ext_uart_avai <= 0;
-    end
-end
-always @(posedge clk_50M) begin //将缓冲区ext_uart_buffer发送出去
-    if(!ext_uart_busy && ext_uart_avai)begin 
-        ext_uart_tx <= ext_uart_buffer;
-        ext_uart_start <= 1;
-    end else begin 
-        ext_uart_start <= 0;
-    end
-end
+    /* =========== Demo code end =========== */
+    
+//    wire clk = clk_50M;
+    reg clk = 0;
+    always @(posedge clk_50M)
+        clk = !clk;
+        
+    wire rst = reset_btn;
 
-async_transmitter #(.ClkFrequency(50000000),.Baud(9600)) //发送模块，9600无检验位
-    ext_uart_t(
-        .clk(clk_50M),                  //外部时钟信号
-        .TxD(txd),                      //串行信号输出
-        .TxD_busy(ext_uart_busy),       //发送器忙状态指示
-        .TxD_start(ext_uart_start),    //开始发送信号
-        .TxD_data(ext_uart_tx)        //待发送的数据
+    // Instruction memory
+    wire[`InstAddrBus] inst_addr;
+    wire rom_ce;
+    wire rom_we;
+    wire[`InstBus] rom_wr_data;
+    wire[`InstBus] inst;
+    
+    // Data memory
+    wire mem_we_i;
+    wire[`RegBus] mem_addr_i;
+    wire[`RegBus] mem_data_i;
+    wire[`RegBus] mem_data_o;
+    wire[3:0] mem_sel_i; 
+    wire mem_ce_i;  
+    
+    // Interrupt 
+    wire timer_int;
+    wire[5:0] interrupt = {5'b00000, timer_int};
+//    wire[5:0] interrupt = {5'b00000, timer_int, gpio_int, uart_int};
+
+    // Disable UART
+    assign uart_rdn = 1;
+    assign uart_wrn = 1;
+
+    RAMWrapper rom_wrapper(
+       .clk(clk),
+       .addr_i(inst_addr),
+       .ce_i(rom_ce),
+       .we_i(rom_we),
+       .data_i(rom_wr_data),
+       .sel_i(4'b1111),    // Always write all 32 bits
+       .data_o(inst),
+       
+       .ram_data(ext_ram_data),
+       .ram_addr(ext_ram_addr),
+       .ram_be_n(ext_ram_be_n),
+       .ram_ce_n(ext_ram_ce_n),
+       .ram_oe_n(ext_ram_oe_n),
+       .ram_we_n(ext_ram_we_n)
     );
 
-//图像输出演示，分辨率800x600@75Hz，像素时钟为50MHz
-wire [11:0] hdata;
-assign video_red = hdata < 266 ? 3'b111 : 0; //红色竖条
-assign video_green = hdata < 532 && hdata >= 266 ? 3'b111 : 0; //绿色竖条
-assign video_blue = hdata >= 532 ? 2'b11 : 0; //蓝色竖条
-assign video_clk = clk_50M;
-vga #(12, 800, 856, 976, 1040, 600, 637, 643, 666, 1, 1) vga800x600at75 (
-    .clk(clk_50M), 
-    .hdata(hdata), //横坐标
-    .vdata(),      //纵坐标
-    .hsync(video_hsync),
-    .vsync(video_vsync),
-    .data_enable(video_de)
-);
-
-//CPU cpu(.clk(clock_btn), .rst(reset_btn));
+    RAMWrapper ram_wrapper(
+        .clk(clk),
+        .addr_i(mem_addr_i),
+        .ce_i(mem_ce_i),
+        .we_i(mem_we_i),
+        .data_i(mem_data_i),
+        .sel_i(mem_sel_i),   
+        .data_o(mem_data_o),
+        
+        .ram_data(base_ram_data),
+        .ram_addr(base_ram_addr),
+        .ram_be_n(base_ram_be_n),
+        .ram_ce_n(base_ram_ce_n),
+        .ram_oe_n(base_ram_oe_n),
+        .ram_we_n(base_ram_we_n)
+    );
+    
+    THCOMIPS32e cpu(
+        .clk(clk),
+        .rst(rst),
+        
+        .rom_addr_o(inst_addr),
+        .rom_ce_o(rom_ce),
+        .rom_we_o(rom_we),
+        .rom_wr_data_o(rom_wr_data),
+        .rom_data_i(inst),
+        
+        .int_i(interrupt),
+        
+        .ram_we_o(mem_we_i),
+        .ram_addr_o(mem_addr_i),
+        .ram_sel_o(mem_sel_i),
+        .ram_data_o(mem_data_i),
+        .ram_data_i(mem_data_o),
+        .ram_ce_o(mem_ce_i),
+        
+        .timer_int_o(timer_int)			
+    );
 
 endmodule
