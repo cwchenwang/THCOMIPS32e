@@ -41,49 +41,98 @@ module openmips_min_sopc(
 	input wire clk,
 	input wire rst
 );
+      // Instruction memory
+      // Adapter
+      wire[`InstAddrBus] inst_addr;
+      wire rom_ce;
+      wire rom_op;
+      wire[`InstBus] rom_wr_data;
+      wire[`InstBus] inst;
+      
+      // Adaptee
+      wire[`InstBus] base_ram_data; //BaseRAM数据，低8位与CPLD串口控制器共享
+      wire[`InstAddrBus] base_ram_addr; //BaseRAM地址 只使用低20位
+      wire[3:0] base_ram_be_n;  //BaseRAM字节使能，低有效。如果不使用字节使能，请保持为0
+      wire base_ram_ce_n;       //BaseRAM片选，低有效
+      wire base_ram_oe_n;       //BaseRAM读使能，低有效
+      wire base_ram_we_n;       //BaseRAM写使能，低有效
+      
+      // Data memory
+      wire mem_we_i;
+      wire[`RegBus] mem_addr_i;
+      wire[`RegBus] mem_data_i;
+      wire[`RegBus] mem_data_o;
+      wire[3:0] mem_sel_i; 
+      wire mem_ce_i;   
+      wire[5:0] int;
+      wire timer_int;
+     
+      //assign int = {5'b00000, timer_int, gpio_int, uart_int};
+      assign int = {5'b00000, timer_int};
+    
+     THCOMIPS32e cpu(
+        .clk(clk),
+        .rst(rst),
+    
+        .rom_addr_o(inst_addr),
+        .rom_ce_o(rom_ce),
+        .rom_op_o(rom_op),
+        .rom_wr_data_o(rom_wr_data),
+        .rom_data_i(inst),
 
-  //连接指令存储器
-  wire[`InstAddrBus] inst_addr;
-  wire[`InstBus] inst;
-  wire rom_ce;
-  wire mem_we_i;
-  wire[`RegBus] mem_addr_i;
-  wire[`RegBus] mem_data_i;
-  wire[`RegBus] mem_data_o;
-  wire[3:0] mem_sel_i; 
-  wire mem_ce_i;   
-  wire[5:0] int;
-  wire timer_int;
- 
-  //assign int = {5'b00000, timer_int, gpio_int, uart_int};
-  assign int = {5'b00000, timer_int};
+        .int_i(int),
 
- openmips openmips0(
-		.clk(clk),
-		.rst(rst),
+        .ram_we_o(mem_we_i),
+        .ram_addr_o(mem_addr_i),
+        .ram_sel_o(mem_sel_i),
+        .ram_data_o(mem_data_i),
+        .ram_data_i(mem_data_o),
+        .ram_ce_o(mem_ce_i),
+        
+        .timer_int_o(timer_int)			
+    );
 	
-		.rom_addr_o(inst_addr),
-		.rom_data_i(inst),
-		.rom_ce_o(rom_ce),
-
-    .int_i(int),
-
-		.ram_we_o(mem_we_i),
-		.ram_addr_o(mem_addr_i),
-		.ram_sel_o(mem_sel_i),
-		.ram_data_o(mem_data_i),
-		.ram_data_i(mem_data_o),
-		.ram_ce_o(mem_ce_i),
-		
-		.timer_int_o(timer_int)			
+//	inst_rom inst_rom0(
+//		.ce(rom_ce),
+//		.addr(inst_addr),
+//		.inst(inst)	
+//	);
 	
-	);
-	
-	inst_rom inst_rom0(
-		.ce(rom_ce),
-		.addr(inst_addr),
-		.inst(inst)	
-	);
+	sram_model base1(/*autoinst*/
+        .DataIO(base_ram_data[15:0]),
+        .Address(base_ram_addr[19:0]),
+        .OE_n(base_ram_oe_n),
+        .CE_n(base_ram_ce_n),
+        .WE_n(base_ram_we_n),
+        .LB_n(base_ram_be_n[0]),
+        .UB_n(base_ram_be_n[1])
+    );
+                
+    sram_model base2(/*autoinst*/
+        .DataIO(base_ram_data[31:16]),
+        .Address(base_ram_addr[19:0]),
+        .OE_n(base_ram_oe_n),
+        .CE_n(base_ram_ce_n),
+        .WE_n(base_ram_we_n),
+        .LB_n(base_ram_be_n[2]),
+        .UB_n(base_ram_be_n[3])
+    );
+                
+    ROMWrapper rom_wrapper(
+        .clk(clk),
+        .addr_i(inst_addr),
+        .ce_i(rom_ce),
+        .op_i(rom_op),
+        .wr_data_i(rom_wr_data),
+        .data_o(inst),
+        
+        .ram_data(base_ram_data),
+        .ram_addr(base_ram_addr),
+        .ram_be_n(base_ram_be_n),
+        .ram_ce_n(base_ram_ce_n),
+        .ram_oe_n(base_ram_oe_n),
+        .ram_we_n(base_ram_we_n)
+    );
 
 	data_ram data_ram0(
 		.clk(clk),

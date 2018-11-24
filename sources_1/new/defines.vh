@@ -239,15 +239,18 @@
 
 `define EXE_RES_NOP 3'b000
 
-
 //Ö¸Áî´æ´¢Æ÷inst_rom
+`define InstAddrWidth 32
 `define InstAddrBus 31:0
+`define InstWidth 32
 `define InstBus 31:0
 `define InstMemNum 131071
 `define InstMemNumLog2 17
 
 //Êý¾Ý´æ´¢Æ÷data_ram
+`define DataAddrWidth 32
 `define DataAddrBus 31:0
+`define DataWidth 32
 `define DataBus 31:0
 `define DataMemNum 131071
 `define DataMemNumLog2 17

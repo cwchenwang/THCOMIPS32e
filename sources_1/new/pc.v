@@ -20,13 +20,13 @@ module PC(
     input wire[`InstAddrBus] rom_rw_addr_i,
     
     // To ROM
-    output reg[`InstAddrBus] addr,
-    output reg ce,
-    output reg rom_op_o,
+    output reg[`InstAddrBus] addr_o,
+    output reg ce_o,
+    output reg op_o,
     output reg[`DataBus] wr_data_o
 );
 
-    // After we assign rom_rw_addr_i to addr, we need to be able to 
+    // After we assign rom_rw_addr_i to addr_o, we need to be able to 
     // switch back to the real PC. Hence the following two variables. 
     reg[`InstAddrBus] m_pc;  
     wire[`InstAddrBus] m_pc_plus_4 = m_pc + 4;
@@ -34,46 +34,51 @@ module PC(
     // Resolve wr_data_o and rom_op_o
     always @(*) begin
         wr_data_o <= rom_wr_data_i;    
-        rom_op_o <= rom_op_i == `PC_ROM_OP_WRITE ? `ROM_OP_WRITE : `ROM_OP_READ;
+        op_o <= rom_op_i == `PC_ROM_OP_WRITE ? `ROM_OP_WRITE : `ROM_OP_READ;
     end
 
-    // Resolve ce
+    // Resolve ce_o
     always @(posedge clk) begin
         if (rst == `RstEnable) begin
-            ce <= `ChipDisable;
+            ce_o <= `ChipDisable;
         end else begin
-            ce <= `ChipEnable;
+            ce_o <= `ChipEnable;
         end
     end
 
-    // Resolve addr and update m_pc.
+    // Resolve addr_o and update m_pc.
     always @(posedge clk) begin        
-        if (ce == `ChipDisable) begin
-            addr <= 0;
+        if (ce_o == `ChipDisable) begin
+            addr_o <= 0;
             m_pc <= 0;
         end else if (flush) begin
-            addr <= new_pc;
+            addr_o <= new_pc;
             m_pc <= new_pc;
-        end else if (stall[0] == `NoStop) begin 
-            // Priority of stall is higher than read / write from ROM!!
-            case (rom_op_i)
-            `PC_ROM_OP_READ: begin
-                addr <= rom_rw_addr_i;
-            end
-            `PC_ROM_OP_WRITE: begin
-                addr <= rom_rw_addr_i;
-            end
-            default: begin
-                if (branch_flag_i == `Branch) begin
-                    addr <= branch_target_address_i;
-                    m_pc <= branch_target_address_i;
-                end else begin
-                    addr <= m_pc_plus_4;
-                    m_pc <= m_pc_plus_4;
+        end else begin
+            // Priority of structural conflict is higher than stall!!
+            // When structural conflict (detected in EX) appears, stall can 
+            // only be requested from ID. In that case, we still need ROM to 
+            // operate.
+           case (rom_op_i)
+           `PC_ROM_OP_READ: begin
+               addr_o <= rom_rw_addr_i;
+           end
+           `PC_ROM_OP_WRITE: begin
+               addr_o <= rom_rw_addr_i;
+           end
+           default: begin
+                if (stall[0] == `NoStop) begin
+                    if (branch_flag_i == `Branch) begin
+                        addr_o <= branch_target_address_i;
+                        m_pc <= branch_target_address_i;
+                    end else begin
+                        addr_o <= m_pc_plus_4;
+                        m_pc <= m_pc_plus_4;
+                    end 
                 end
-            end
-            endcase
-        end // else
+           end
+           endcase 
+        end
     end // always
 
 endmodule
