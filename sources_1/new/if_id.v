@@ -22,74 +22,44 @@
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
-// Module:  regfile
-// File:    regfile.v
+// Module:  if_id
+// File:    if_id.v
 // Author:  Lei Silei
 // E-mail:  leishangwen@163.com
-// Description: 通用寄存器，共32个
+// Description: IF/ID阶段的寄存器
 // Revision: 1.0
 //////////////////////////////////////////////////////////////////////
 
 `include "defines.vh"
 
-module RegFile(
-	input wire clk,
-	input wire rst,
-	
-	//写端口
-	input wire we,
-	input wire[`RegAddrBus] waddr,
-	input wire[`RegBus] wdata,
-	
-	//读端口1
-	input wire re1,
-	input wire[`RegAddrBus] raddr1,
-	output reg[`RegBus] rdata1,
-	
-	//读端口2
-	input wire re2,
-	input wire[`RegAddrBus] raddr2,
-	output reg[`RegBus] rdata2
+module IF_ID(
+	input wire					clk,
+	input wire					rst,
+
+	//来自控制模块的信息
+	input wire[5:0]             stall,	
+	input wire                  flush,
+
+	input wire[`InstAddrBus]	if_pc,
+	input wire[`InstBus]		if_inst,
+	output reg[`InstAddrBus]    id_pc,
+	output reg[`InstBus]        id_inst  
 );
 
-	reg[`RegBus]  regs[0:`RegNum-1];
-
 	always @ (posedge clk) begin
-		if (rst == `RstDisable) begin
-			if((we == `WriteEnable) && (waddr != `RegNumLog2'h0)) begin
-				regs[waddr] <= wdata;
-			end
+		if (rst == `RstEnable) begin
+			id_pc <= `ZeroWord;
+			id_inst <= `ZeroWord;
+		end else if(flush == 1'b1 ) begin
+			id_pc <= `ZeroWord;
+			id_inst <= `ZeroWord;					
+		end else if(stall[1] == `Stop && stall[2] == `NoStop) begin
+			id_pc <= `ZeroWord;
+			id_inst <= `ZeroWord;	
+	  end else if(stall[1] == `NoStop) begin
+		  id_pc <= if_pc;
+		  id_inst <= if_inst;
 		end
-	end
-	
-	always @ (*) begin
-		if(rst == `RstEnable) begin
-			  rdata1 <= `ZeroWord;
-	  end else if(raddr1 == `RegNumLog2'h0) begin
-	  		rdata1 <= `ZeroWord;
-	  end else if((raddr1 == waddr) && (we == `WriteEnable) 
-	  	            && (re1 == `ReadEnable)) begin
-	  	  rdata1 <= wdata;
-	  end else if(re1 == `ReadEnable) begin
-	      rdata1 <= regs[raddr1];
-	  end else begin
-	      rdata1 <= `ZeroWord;
-	  end
-	end
-
-	always @ (*) begin
-		if(rst == `RstEnable) begin
-			  rdata2 <= `ZeroWord;
-	  end else if(raddr2 == `RegNumLog2'h0) begin
-	  		rdata2 <= `ZeroWord;
-	  end else if((raddr2 == waddr) && (we == `WriteEnable) 
-	  	            && (re2 == `ReadEnable)) begin
-	  	  rdata2 <= wdata;
-	  end else if(re2 == `ReadEnable) begin
-	      rdata2 <= regs[raddr2];
-	  end else begin
-	      rdata2 <= `ZeroWord;
-	  end
 	end
 
 endmodule
