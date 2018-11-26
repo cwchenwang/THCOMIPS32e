@@ -35,56 +35,63 @@
 module Ctrl(
 	input wire				rst,
 
-	input wire[31:0]		excepttype_i,
-	input wire[`RegBus]     cp0_epc_i,
+	input wire[31:0]       excepttype_i,
+	input wire[`RegBus]    cp0_epc_i,
 
-	input wire              stallreq_from_id,
+	input wire             stallreq_from_id,
 
 	//来自执行阶段的暂停请求
-	input wire              stallreq_from_ex,
+    input wire             stallreq_from_ex,
+	input wire             struct_conflict_from_ex,    // TODO: not used
 
-	output reg[`RegBus]     new_pc,
-	output reg              flush,	
-	output reg[5:0]         stall       
+	output reg[`RegBus]    new_pc,
+	output reg             flush,	
+	output reg[5:0]        stall       
 );
 
 
 	always @ (*) begin
-		if(rst == `RstEnable) begin
+		if (rst == `RstEnable) begin
 			stall <= 6'b000000;
 			flush <= 1'b0;
 			new_pc <= `ZeroWord;
-		end else if(excepttype_i != `ZeroWord) begin
-		  flush <= 1'b1;
-		  stall <= 6'b000000;
+		end else if (excepttype_i != `ZeroWord) begin
+            flush <= 1'b1;
+            stall <= 6'b000000;
 			case (excepttype_i)
-				32'h00000001:		begin   //interrupt
-					new_pc <= 32'h00000020;
-				end
-				32'h00000008:		begin   //syscall
-					new_pc <= 32'h00000040;
-				end
-				32'h0000000a:		begin   //inst_invalid
-					new_pc <= 32'h00000040;
-				end
-				32'h0000000d:		begin   //trap
-					new_pc <= 32'h00000040;
-				end
-				32'h0000000c:		begin   //ov
-					new_pc <= 32'h00000040;
-				end
-				32'h0000000e:		begin   //eret
-					new_pc <= cp0_epc_i;
-				end
-				default	: begin
-				end
+            32'h00000001:		begin   //interrupt
+                new_pc <= 32'h00000020;
+            end
+            32'h00000008:		begin   //syscall
+                new_pc <= 32'h00000040;
+            end
+            32'h0000000a:		begin   //inst_invalid
+                new_pc <= 32'h00000040;
+            end
+            32'h0000000d:		begin   //trap
+                new_pc <= 32'h00000040;
+            end
+            32'h0000000c:		begin   //ov
+                new_pc <= 32'h00000040;
+            end
+            32'h0000000e:		begin   //eret
+                new_pc <= cp0_epc_i;
+            end
+            default	: begin
+            end
 			endcase 						
-		end else if(stallreq_from_ex == `Stop) begin
-			stall <= 6'b001111;
-			flush <= 1'b0;		
-		end else if(stallreq_from_id == `Stop) begin
+		end else if (stallreq_from_ex == `Stop) begin
+            stall <= 6'b001111;
+            flush <= 1'b0;		
+		end else if (stallreq_from_id == `Stop) begin
+            // The following causes EX to get a nop in the next cycle and ID to 
+            // keep as it is.
+            // NOTE: when structral conflict is detected by EX, it should be fine 
+            // to set stall = 6'b000011, s.t., stall[1] && !stall[2] -> ID gets a nop.
+            // After that, IF_ID inserts a nop
+            // What if struct_conflict_from_ex??
 			stall <= 6'b000111;	
-			flush <= 1'b0;		
+			flush <= 1'b0;
 		end else begin
 			stall <= 6'b000000;
 			flush <= 1'b0;

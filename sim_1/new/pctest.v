@@ -13,7 +13,7 @@ module PCTest();
     reg branch_flag = 0;
     reg[`InstAddrBus] branch_addr = 0;
     
-    reg[1:0] pc_rom_op = `PC_ROM_OP_INST;
+    reg[1:0] pc_rom_op = `ROM_OP_INST;
     reg[`DataBus] rom_wr_data = 0;
     reg[`InstAddrBus] rom_rw_addr = 0;
     

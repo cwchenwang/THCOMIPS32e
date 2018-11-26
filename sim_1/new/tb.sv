@@ -1,6 +1,8 @@
 `timescale 1ns / 1ps
-module tb;
 
+//`define LOAD_PREAMBLE
+
+module tb;
     wire clk_50M, clk_11M0592;
     
     reg clock_btn = 0;         //BTN5手动时钟按钮开关，带消抖电路，按下时为1
@@ -41,7 +43,7 @@ module tb;
     
     //Windows需要注意路径分隔符的转义，例如"D:\\foo\\bar.bin"
     localparam BASE_RAM_INIT_FILE = "/tmp/main.bin"; //BaseRAM初始化文件，请修改为实际的绝对路径
-    localparam EXT_RAM_INIT_FILE = "inst_rom_9_3.bin";    //ExtRAM初始化文件，请修改为实际的绝对路径
+    localparam EXT_RAM_INIT_FILE = "inst_rom.bin";    //ExtRAM初始化文件，请修改为实际的绝对路径
     localparam FLASH_INIT_FILE = "/tmp/kernel.elf";    //Flash初始化文件，请修改为实际的绝对路径
     
     assign rxd = 1'b1; //idle state
@@ -176,14 +178,33 @@ module tb;
     initial begin 
         reg [31:0] tmp_array[0:1048575];
         integer n_File_ID, n_Init_Size;
+`ifdef LOAD_PREAMBLE
+        integer preamble_len;
+`endif
         n_File_ID = $fopen(EXT_RAM_INIT_FILE, "rb");
         if(!n_File_ID)begin 
             n_Init_Size = 0;
             $display("Failed to open ExtRAM init file");
         end else begin
-            tmp_array[0] = 'hac00ffff;  // sw zero, 0xffff(zero)
-            tmp_array[1] = 'h8c01ffff;  // lw $1, 0xffff(zero) 
-            n_Init_Size = $fread(tmp_array, n_File_ID, 2) / 4 + 2;
+`ifdef LOAD_PREAMBLE
+            preamble_len = 11;
+            tmp_array[0] = 0;
+            tmp_array[1] = 'h3c01803f;  // lui $1, 0x803f
+            tmp_array[2] = 'hac2000ff;  // sw $0, 0xff($1) 
+            tmp_array[3] = 'h8c2000ff;  // lw $0, 0xff($1)
+            tmp_array[4] = 0;
+            tmp_array[5] = 0;
+            tmp_array[6] = 'h3c01807f;  // lui $1, 0x807f
+            tmp_array[7] = 'hac2000ff;  // sw $0, 0xff($1)
+            tmp_array[8] = 'h8c2000ff;  // lw $0, 0xff($1)
+            tmp_array[9] = 0;
+            tmp_array[10] = 0;
+            n_Init_Size = $fread(tmp_array, n_File_ID, preamble_len) / 4 + preamble_len;
+            $display("With preamble");
+`else
+            n_Init_Size = $fread(tmp_array, n_File_ID) / 4;
+            $display("Without preamble");
+`endif
             $fclose(n_File_ID);
         end
         

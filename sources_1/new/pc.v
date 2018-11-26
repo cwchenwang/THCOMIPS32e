@@ -24,10 +24,14 @@ module PC(
     input wire[`InstAddrBus] rom_rw_addr_i,
     
     // To ROM
-    output reg[`InstAddrBus] addr_o,
+    output reg[`InstAddrBus] addr_o,    
     output reg ce_o,
     output reg we_o,
-    output reg[`InstBus] data_o
+    output reg[`InstBus] data_o,
+    
+    // To IF/ID
+    output reg insert_nop_o,  // Shouldn't conflict with normal stall signal
+    output reg[`InstAddrBus] pc_o     // Proper PC, equals data_o when rom_op_i is `ROM_OP_INST
 );
 
     // After we assign rom_rw_addr_i to addr_o, we need to be able to 
@@ -36,9 +40,9 @@ module PC(
     wire[`InstAddrBus] m_pc_plus_4 = m_pc + 4;
     
     // Resolve data_o and rom_op_o
-    always @(*) begin
+    always @(posedge clk) begin
         data_o <= rom_wr_data_i;    
-        we_o <= rom_op_i == `PC_ROM_OP_WRITE ? `WriteEnable : `WriteDisable;
+        we_o <= rom_op_i == `ROM_OP_STORE ? `WriteEnable : `WriteDisable;
     end
 
     // Resolve ce_o
@@ -50,33 +54,44 @@ module PC(
         end
     end
 
-    // Resolve addr_o and update m_pc.
+    // Resolve addr_o, pc_o, insert_nop_o, and update m_pc.
     always @(posedge clk) begin        
         if (ce_o == `ChipDisable) begin
             addr_o <= 0;
+            pc_o <= 0;
             m_pc <= 0;
+            insert_nop_o <= 0;
         end else if (flush) begin
             addr_o <= new_pc;
+            pc_o <= new_pc;
             m_pc <= new_pc;
+            insert_nop_o <= 0;
         end else begin
             // Priority of structural conflict is higher than stall!!
             // When structural conflict (detected in EX) appears, stall can 
             // only be requested from ID. In that case, we still need ROM to 
             // operate.
            case (rom_op_i)
-           `PC_ROM_OP_READ: begin
+           `ROM_OP_LOAD: begin
                addr_o <= rom_rw_addr_i;
+               pc_o <= m_pc;
+               insert_nop_o <= 1;
            end
-           `PC_ROM_OP_WRITE: begin
+           `ROM_OP_STORE: begin
                addr_o <= rom_rw_addr_i;
+               pc_o <= m_pc;
+               insert_nop_o <= 1;
            end
            default: begin
+                insert_nop_o <= 0;
                 if (stall[0] == `NoStop) begin
                     if (branch_flag_i == `Branch) begin
                         addr_o <= branch_target_address_i;
+                        pc_o <= branch_target_address_i;
                         m_pc <= branch_target_address_i;
                     end else begin
                         addr_o <= m_pc_plus_4;
+                        pc_o <= m_pc_plus_4;
                         m_pc <= m_pc_plus_4;
                     end 
                 end

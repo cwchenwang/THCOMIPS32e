@@ -184,10 +184,10 @@ module thinpad_top(
     
     /* =========== Demo code end =========== */
     
-//    wire clk = clk_50M;
-    reg clk = 0;
-    always @(posedge clk_50M)
-        clk = !clk;
+    wire clk = clk_50M;
+//    reg clk = 0;
+//    always @(posedge clk_50M)
+//        clk = !clk;
         
     wire rst = reset_btn;
 
