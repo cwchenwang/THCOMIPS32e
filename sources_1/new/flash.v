@@ -16,6 +16,7 @@ module flash(
     inout wire[15:0] flash_data
 );
 
+    // 应该由网站平台实现
     /*reg[15:0] data_flash[0:4194303];
     initial $readmemh ("flash.data", data_flash);
     assign flash_data = { data_flash[addr][7:0], data_flash[addr][15:8] };*/
@@ -26,9 +27,6 @@ module flash(
     assign flash_byte = 1'b1;
 
     reg[2:0] cur_state = 3'b000;
-
-    // 仅供测试使用
-    assign flash_data = 16'b0000100000000000;
 
     always @(posedge clk or posedge rst) begin
 		if (reset) begin
