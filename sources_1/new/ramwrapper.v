@@ -1,6 +1,5 @@
-// Module RAMWrapper that adaptas SRAM modules as declared in thinpad_top.v 
-// to a RAM module.
-// With sel_i set to 4'b1111, this module can also be used to adapt SRAM to ROM.
+// Module RAMWrapper that adaptas a SRAM module as declared in thinpad_top.v 
+// to a RAM / ROM module.
 // Author: LYL
 // Created on: 2018/11/24
 
@@ -47,6 +46,7 @@ module RAMWrapper(
             ram_ce_n <= 1;
             ram_oe_n <= 1;
             ram_we_n <= 1;
+//            ram_be_n <= 0;
         end else begin
             ram_ce_n <= 0;
             if (we_i == `WriteEnable) begin
@@ -56,6 +56,7 @@ module RAMWrapper(
             end else begin  
                 ram_oe_n <= 0;
                 ram_we_n <= 1;
+//                ram_be_n <= 0;
             end
         end
     end 

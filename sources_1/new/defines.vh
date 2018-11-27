@@ -286,11 +286,12 @@
 `define CP0_REG_PrId    5'b01111         //Ö»¶Á
 `define CP0_REG_CONFIG    5'b10000       //Ö»¶Á
 
-//// ROM control signals (ROM::op, PC::rom_op_o)
-//`define ROM_OP_READ 1'b0
-//`define ROM_OP_WRITE 1'b1
-
 // Values of PC::rom_op_i[1:0]
-`define PC_ROM_OP_READ 2'b00
-`define PC_ROM_OP_WRITE 2'b01
-`define PC_ROM_OP_INST 2'b10  // incl, 2'b11
+`define ROM_OP_LOAD 2'b00
+`define ROM_OP_STORE 2'b01
+`define ROM_OP_INST 2'b10  // incl, 2'b11s
+
+// Values of EX::ld_src_o, MEM::ld_src_i, MEM::ld_src_o, MEM_WB::ld_src
+// Only meaningful when the instruction is of load type.
+`define LOAD_STORE_FROM_RAM 1'b0
+`define LOAD_STORE_FROM_ROM 1'b1
