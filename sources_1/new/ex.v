@@ -118,7 +118,7 @@ module EX(
 	output wire[`RegBus]		current_inst_address_o,	
 
     output reg                  stallreq, 
-    output reg                  struct_conflict_o,
+//    output reg                  struct_conflict_o,
     
     // For structural conflict
     output reg                  mem_src_o,   // To EX_MEM  
@@ -164,15 +164,15 @@ module EX(
 	// Tackle structural conflict
 	// TODO: modify this after removing madd, msub, div,...
 	always @(*) begin
-		mem_src_o <= mem_addr_o[22] ? `LOAD_FROM_RAM : `LOAD_FROM_ROM;   // 2 ^ 22 = 4M	
+		mem_src_o <= mem_addr_o[22] ? `LOAD_STORE_FROM_RAM : `LOAD_STORE_FROM_ROM;   // 2 ^ 22 = 4M	
 		if (!mem_addr_o[22] && alusel_i == `EXE_RES_LOAD_STORE) begin	// Access ROM
 			rom_op_o <= is_load_i ? `ROM_OP_LOAD : `ROM_OP_STORE;
 //			stallreq <= 1;   // Stall IF_ID, ID, EX (while PC tries to load / store ROM)
-            struct_conflict_o <= 1;
+//            struct_conflict_o <= 1;
 		end else begin
 			rom_op_o <= `ROM_OP_INST;
 //			stallreq <= stallreq_for_madd_msub || stallreq_for_div;      // Same as original
-            struct_conflict_o <= 0;
+//            struct_conflict_o <= 0;
         end
         stallreq <= stallreq_for_madd_msub || stallreq_for_div;      // Same as original
 	end

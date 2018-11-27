@@ -30,6 +30,7 @@
 // Revision: 1.0
 //////////////////////////////////////////////////////////////////////
 
+`timescale 1ns / 1ps
 `include "defines.vh"
 
 module THCOMIPS32e(
@@ -39,11 +40,12 @@ module THCOMIPS32e(
 	input wire[5:0]				int_i,
   
     // Instruction memory
-	output wire[`RegBus]        rom_addr_o,
-	output wire                 rom_ce_o,
+	output wire[`RegBus]       rom_addr_o,
+    output wire                rom_ce_o,
 	output wire                rom_we_o,
-	output wire[`RegBus]       rom_wr_data_o,                 
-	input wire[`RegBus]			rom_data_i,
+	output reg[`RegBus]        rom_data_o,
+	output reg[3:0]            rom_sel_o,                 
+	input wire[`RegBus]        rom_data_i,
 	
 	//连接数据存储器data_ram
 	input wire[`RegBus]			ram_data_i,
@@ -51,7 +53,7 @@ module THCOMIPS32e(
 	output wire[`RegBus]        ram_data_o,
 	output wire                 ram_we_o,
 	output wire[3:0]            ram_sel_o,
-	output wire[3:0]            ram_ce_o,
+	output wire                 ram_ce_o,
 	
 	output wire                 timer_int_o
 );
@@ -60,6 +62,10 @@ module THCOMIPS32e(
 	wire[`InstAddrBus] id_pc_i;
 	wire[`InstBus] id_inst_i;
 	wire pc_insert_nop_o;
+	wire[`InstAddrBus] pc_addr_o;
+	wire pc_we_o;
+	wire[`AluOpBus] pc_aluop_o;
+	wire[`InstBus] pc_data_o;
 	
 	//连接译码阶段ID模块的输出与ID/EX模块的输入
 	wire[`AluOpBus] id_aluop_o;
@@ -171,8 +177,8 @@ module THCOMIPS32e(
     wire[`RegAddrBus] reg2_addr;
 
 	//连接执行阶段与hilo模块的输出，读取HI、LO寄存器
-	wire[`RegBus] 	hi;
-	wire[`RegBus]   lo;
+	wire[`RegBus] hi;
+	wire[`RegBus] lo;
 
     //连接执行阶段与ex_reg模块，用于多周期的MADD、MADDU、MSUB、MSUBU指令
 	wire[`DoubleRegBus] hilo_temp_o;
@@ -198,7 +204,7 @@ module THCOMIPS32e(
 	wire[5:0] stall;
 	wire stallreq_from_id;	
 	wire stallreq_from_ex;
-	wire struct_conflict_from_ex;
+//	wire struct_conflict_from_ex;
 
 	wire LLbit_o;
 
@@ -209,12 +215,12 @@ module THCOMIPS32e(
     wire[`RegBus] new_pc;
 
 	wire[`RegBus] cp0_count;
-	wire[`RegBus]	cp0_compare;
-	wire[`RegBus]	cp0_status;
-	wire[`RegBus]	cp0_cause;
-	wire[`RegBus]	cp0_epc;
-	wire[`RegBus]	cp0_config;
-	wire[`RegBus]	cp0_prid; 
+	wire[`RegBus] cp0_compare;
+	wire[`RegBus] cp0_status;
+	wire[`RegBus] cp0_cause;
+	wire[`RegBus] cp0_epc;
+	wire[`RegBus] cp0_config;
+	wire[`RegBus] cp0_prid; 
 
     wire[`RegBus] latest_epc;
   
@@ -227,18 +233,24 @@ module THCOMIPS32e(
 	    .new_pc(new_pc),
 		.branch_flag_i(id_branch_flag_o),
 		.branch_target_address_i(branch_target_address),		
-		.rom_op_i(rom_op),
-		.rom_wr_data_i(ex_reg2_o),    // TODO: check this
-		.rom_rw_addr_i(ex_mem_addr_o),
 		
-		.addr_o(rom_addr_o),
+		.rom_op_i(rom_op),
+		.rom_wr_data_i(ex_reg2_o),    // Strange name...
+		.rom_rw_addr_i(ex_mem_addr_o),
+		.aluop_i(ex_aluop_o),
+		
+		.addr_o(pc_addr_o),
 		.ce_o(rom_ce_o),
-		.we_o(rom_we_o),
-		.data_o(rom_wr_data_o),
+		.we_o(pc_we_o),
+		.data_o(pc_data_o),
+		.aluop_o(pc_aluop_o),
 		
 		.insert_nop_o(pc_insert_nop_o),
 		.pc_o(pc)
 	);
+	
+	assign rom_we_o = pc_we_o;
+	assign rom_addr_o = pc_addr_o;
 	
     // IF/ID模块例化
 	IF_ID if_id(
@@ -438,7 +450,7 @@ module THCOMIPS32e(
         .current_inst_address_o(ex_current_inst_address_o),	
         
         .stallreq(stallreq_from_ex),
-        .struct_conflict_o(struct_conflict_from_ex),
+//        .struct_conflict_o(struct_conflict_from_ex),
         
         .mem_src_o(ex_mem_src_o),
         .rom_op_o(rom_op)     				
@@ -638,7 +650,7 @@ module THCOMIPS32e(
         
         //来自执行阶段的暂停请求
         .stallreq_from_ex(stallreq_from_ex),
-        .struct_conflict_from_ex(struct_conflict_from_ex),
+//        .struct_conflict_from_ex(struct_conflict_from_ex),
         .new_pc(new_pc),
         .flush(flush),
         .stall(stall)       	
@@ -696,5 +708,106 @@ module THCOMIPS32e(
 		
 		.timer_int_o(timer_int_o)  			
 	);
+	
+	// Determine rom_sel_o and rom_data_o.
+	// Basically the same as the trick in MEM, but we only need to
+	// care about rom_sel_o when we are writing to ROM. Otherwise
+	// simply set it as 4'b1111. 
+	always @(*) begin
+	   if (rst == `RstEnable) begin
+	       rom_data_o <= 0;
+	       rom_sel_o <= 0;
+	       
+	   end else begin
+            rom_data_o <= pc_data_o;
+            rom_sel_o <= 4'b1111;   
+            if (pc_we_o == `WriteEnable) begin
+                case (pc_aluop_o)             
+                `EXE_SB_OP: begin
+                    rom_data_o <= {4{pc_data_o[7:0]}};
+                    case (pc_addr_o[1:0])
+                    2'b00: begin
+                        rom_sel_o <= 4'b1000;
+                    end
+                    2'b01: begin
+                        rom_sel_o <= 4'b0100;
+                    end
+                    2'b10: begin
+                        rom_sel_o <= 4'b0010;
+                    end
+                    2'b11: begin 
+                        rom_sel_o <= 4'b0001;    
+                    end
+                    default: begin
+                        rom_sel_o <= 0;
+                    end
+                    endcase                
+                end
+                `EXE_SH_OP: begin
+                    rom_data_o <= {2{pc_data_o[15:0]}};
+                    case (pc_addr_o[1:0])
+                    2'b00: begin
+                        rom_sel_o <= 4'b1100;
+                    end
+                    2'b10: begin
+                        rom_sel_o <= 4'b0011;
+                    end
+                    default: begin
+                        rom_sel_o <= 0;
+                    end
+                    endcase                        
+                end
+                // SW omitted
+                `EXE_SWL_OP: begin
+                    case (pc_addr_o[1:0])
+                    2'b00: begin             
+                        rom_data_o <= pc_data_o;
+                        rom_sel_o <= 4'b1111;
+                    end
+                    2'b01: begin 
+                        rom_data_o <= {8'h0, pc_data_o[31:8]};
+                        rom_sel_o <= 4'b0111;
+                    end
+                    2'b10: begin 
+                        rom_data_o <= {16'h0, pc_data_o[31:16]};
+                        rom_sel_o <= 4'b0011;
+                    end
+                    2'b11: begin 
+                        rom_data_o <= {24'h0, pc_data_o[31:24]};
+                        rom_sel_o <= 4'b0001;    
+                    end 
+                    default: begin 
+                        rom_sel_o <= 4'b0000;
+                    end
+                    endcase                            
+                end
+                `EXE_SWR_OP: begin
+                    case (pc_addr_o[1:0])
+                    2'b00: begin 
+                        rom_data_o <= {pc_data_o[7:0], 24'h0};
+                        rom_sel_o <= 4'b1000;
+                    end
+                    2'b01: begin 
+                        rom_data_o <= {pc_data_o[15:0], 16'h0};
+                        rom_sel_o <= 4'b1100;
+                    end
+                    2'b10: begin 
+                        rom_data_o <= {pc_data_o[23:0], 8'h0};
+                        rom_sel_o <= 4'b1110;
+                    end
+                    2'b11: begin 
+                        rom_data_o <= pc_data_o;
+                        rom_sel_o <= 4'b1111;    
+                    end
+                    default: begin 
+                        rom_sel_o <= 4'b0000;
+                    end
+                    endcase                                            
+                end 
+                // Not considering sc!!
+                endcase                                
+            end
+        end
+	end
 	
 endmodule

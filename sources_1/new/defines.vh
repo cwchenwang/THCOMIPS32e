@@ -289,9 +289,9 @@
 // Values of PC::rom_op_i[1:0]
 `define ROM_OP_LOAD 2'b00
 `define ROM_OP_STORE 2'b01
-`define ROM_OP_INST 2'b10  // incl, 2'b11
+`define ROM_OP_INST 2'b10  // incl, 2'b11s
 
 // Values of EX::ld_src_o, MEM::ld_src_i, MEM::ld_src_o, MEM_WB::ld_src
 // Only meaningful when the instruction is of load type.
-`define LOAD_FROM_RAM 1'b0
-`define LOAD_FROM_ROM 1'b1
+`define LOAD_STORE_FROM_RAM 1'b0
+`define LOAD_STORE_FROM_ROM 1'b1

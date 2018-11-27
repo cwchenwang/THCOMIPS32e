@@ -53,20 +53,41 @@ module IF_ID(
 	output reg[`InstBus]        id_inst  
 );
 
+    reg[`InstAddrBus] last_pc;
+    reg[`InstBus] last_inst;
+    reg[5:0] last_stall;
+    
+    // History info; useful when stall in the middle of loading / storing ROM.
+    always @(posedge clk) begin
+        last_stall <= stall;
+        if (if_pc != last_pc)   // Maybe redundant condition
+            last_inst <= if_inst;
+        last_pc <= if_pc;
+    end
+
 	always @ (posedge clk) begin
 		if (rst == `RstEnable) begin
 			id_pc <= `ZeroWord;
 			id_inst <= `ZeroWord;
-		end else if (flush == 1'b1) begin
+			last_pc <= 0;
+			last_inst <= 0;
+			last_stall <= 0;
+		end else if (flush) begin
 			id_pc <= `ZeroWord;
-			id_inst <= `ZeroWord;					
+			id_inst <= `ZeroWord;	
+		end else if (insert_nop && last_stall[1] && !stall[1]) begin	
+            // Given insert_nop, we were still dealing with structural conflict;
+            // Changed from stalled to not stalled -> PC accepted a new state.
+            // Therefore we have stored an instruction (last_inst), so send it to ID
+            id_pc <= last_pc;
+            id_inst <= last_inst;
 		end else if ((stall[1] == `Stop && stall[2] == `NoStop) || insert_nop) begin
 			id_pc <= `ZeroWord;
 			id_inst <= `ZeroWord;	
 		end else if (stall[1] == `NoStop) begin
 			id_pc <= if_pc;
 			id_inst <= if_inst;
-		end	// Implied: stall[1] && stall[2]  -> nothing changes
+		end	// Implied: (normally) stall[1] && stall[2]  -> nothing changes
 	end
 
 endmodule

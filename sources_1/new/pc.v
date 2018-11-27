@@ -22,12 +22,14 @@ module PC(
     input wire[1:0] rom_op_i,
     input wire[`InstBus] rom_wr_data_i,
     input wire[`InstAddrBus] rom_rw_addr_i,
+    input wire[`AluOpBus] aluop_i,
     
     // To ROM
     output reg[`InstAddrBus] addr_o,    
     output reg ce_o,
     output reg we_o,
     output reg[`InstBus] data_o,
+    output reg[`AluOpBus] aluop_o,  // To determine to sel_i at the next stage
     
     // To IF/ID
     output reg insert_nop_o,  // Shouldn't conflict with normal stall signal
@@ -39,10 +41,11 @@ module PC(
     reg[`InstAddrBus] m_pc;  
     wire[`InstAddrBus] m_pc_plus_4 = m_pc + 4;
     
-    // Resolve data_o and rom_op_o
+    // Resolve data_o, rom_op_o, aluop_o
     always @(posedge clk) begin
         data_o <= rom_wr_data_i;    
         we_o <= rom_op_i == `ROM_OP_STORE ? `WriteEnable : `WriteDisable;
+        aluop_o <= aluop_i;
     end
 
     // Resolve ce_o

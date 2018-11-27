@@ -42,7 +42,7 @@ module Ctrl(
 
 	//来自执行阶段的暂停请求
     input wire             stallreq_from_ex,
-	input wire             struct_conflict_from_ex,    // TODO: not used
+//    input wire             struct_conflict_from_ex,
 
 	output reg[`RegBus]    new_pc,
 	output reg             flush,	
@@ -89,7 +89,6 @@ module Ctrl(
             // NOTE: when structral conflict is detected by EX, it should be fine 
             // to set stall = 6'b000011, s.t., stall[1] && !stall[2] -> ID gets a nop.
             // After that, IF_ID inserts a nop
-            // What if struct_conflict_from_ex??
 			stall <= 6'b000111;	
 			flush <= 1'b0;
 		end else begin

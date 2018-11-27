@@ -197,6 +197,7 @@ module thinpad_top(
     wire rom_we;
     wire[`InstBus] rom_wr_data;
     wire[`InstBus] inst;
+    wire[3:0] rom_sel;
     
     // Data memory
     wire mem_we_i;
@@ -221,7 +222,7 @@ module thinpad_top(
        .ce_i(rom_ce),
        .we_i(rom_we),
        .data_i(rom_wr_data),
-       .sel_i(4'b1111),    // Always write all 32 bits
+       .sel_i(rom_sel),    
        .data_o(inst),
        
        .ram_data(ext_ram_data),
@@ -256,10 +257,9 @@ module thinpad_top(
         .rom_addr_o(inst_addr),
         .rom_ce_o(rom_ce),
         .rom_we_o(rom_we),
-        .rom_wr_data_o(rom_wr_data),
+        .rom_data_o(rom_wr_data),
+        .rom_sel_o(rom_sel),
         .rom_data_i(inst),
-        
-        .int_i(interrupt),
         
         .ram_we_o(mem_we_i),
         .ram_addr_o(mem_addr_i),
@@ -268,6 +268,7 @@ module thinpad_top(
         .ram_data_i(mem_data_o),
         .ram_ce_o(mem_ce_i),
         
+        .int_i(interrupt),
         .timer_int_o(timer_int)			
     );
 
