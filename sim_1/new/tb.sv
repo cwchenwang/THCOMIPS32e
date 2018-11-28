@@ -1,6 +1,7 @@
 `timescale 1ns / 1ps
 
 //`define LOAD_PREAMBLE
+//`define REVERSE_ENDIAN    // Enable this when using bin files from the book
 
 module tb;
     wire clk_50M, clk_11M0592;
@@ -43,7 +44,7 @@ module tb;
     
     //Windows需要注意路径分隔符的转义，例如"D:\\foo\\bar.bin"
     localparam BASE_RAM_INIT_FILE = "/tmp/main.bin"; //BaseRAM初始化文件，请修改为实际的绝对路径
-    localparam EXT_RAM_INIT_FILE = "inst_rom.bin";    //ExtRAM初始化文件，请修改为实际的绝对路径
+    localparam EXT_RAM_INIT_FILE = "kernel.bin";    //ExtRAM初始化文件，请修改为实际的绝对路径
     localparam FLASH_INIT_FILE = "/tmp/kernel.elf";    //Flash初始化文件，请修改为实际的绝对路径
     
     assign rxd = 1'b1; //idle state
@@ -100,37 +101,37 @@ module tb;
         .clk_50M    (clk_50M)
     );
     sram_model base1(/*autoinst*/
-                .DataIO(base_ram_data[15:0]),
-                .Address(base_ram_addr[19:0]),
-                .OE_n(base_ram_oe_n),
-                .CE_n(base_ram_ce_n),
-                .WE_n(base_ram_we_n),
-                .LB_n(base_ram_be_n[0]),
-                .UB_n(base_ram_be_n[1]));
+        .DataIO(base_ram_data[15:0]),
+        .Address(base_ram_addr[19:0]),
+        .OE_n(base_ram_oe_n),
+        .CE_n(base_ram_ce_n),
+        .WE_n(base_ram_we_n),
+        .LB_n(base_ram_be_n[0]),
+        .UB_n(base_ram_be_n[1]));
     sram_model base2(/*autoinst*/
-                .DataIO(base_ram_data[31:16]),
-                .Address(base_ram_addr[19:0]),
-                .OE_n(base_ram_oe_n),
-                .CE_n(base_ram_ce_n),
-                .WE_n(base_ram_we_n),
-                .LB_n(base_ram_be_n[2]),
-                .UB_n(base_ram_be_n[3]));
+        .DataIO(base_ram_data[31:16]),
+        .Address(base_ram_addr[19:0]),
+        .OE_n(base_ram_oe_n),
+        .CE_n(base_ram_ce_n),
+        .WE_n(base_ram_we_n),
+        .LB_n(base_ram_be_n[2]),
+        .UB_n(base_ram_be_n[3]));
     sram_model ext1(/*autoinst*/
-                .DataIO(ext_ram_data[15:0]),
-                .Address(ext_ram_addr[19:0]),
-                .OE_n(ext_ram_oe_n),
-                .CE_n(ext_ram_ce_n),
-                .WE_n(ext_ram_we_n),
-                .LB_n(ext_ram_be_n[0]),
-                .UB_n(ext_ram_be_n[1]));
+        .DataIO(ext_ram_data[15:0]),
+        .Address(ext_ram_addr[19:0]),
+        .OE_n(ext_ram_oe_n),
+        .CE_n(ext_ram_ce_n),
+        .WE_n(ext_ram_we_n),
+        .LB_n(ext_ram_be_n[0]),
+        .UB_n(ext_ram_be_n[1]));
     sram_model ext2(/*autoinst*/
-                .DataIO(ext_ram_data[31:16]),
-                .Address(ext_ram_addr[19:0]),
-                .OE_n(ext_ram_oe_n),
-                .CE_n(ext_ram_ce_n),
-                .WE_n(ext_ram_we_n),
-                .LB_n(ext_ram_be_n[2]),
-                .UB_n(ext_ram_be_n[3]));
+        .DataIO(ext_ram_data[31:16]),
+        .Address(ext_ram_addr[19:0]),
+        .OE_n(ext_ram_oe_n),
+        .CE_n(ext_ram_ce_n),
+        .WE_n(ext_ram_we_n),
+        .LB_n(ext_ram_be_n[2]),
+        .UB_n(ext_ram_be_n[3]));
     x28fxxxp30 #(.FILENAME_MEM(FLASH_INIT_FILE)) flash(
         .A(flash_a[1+:22]), 
         .DQ(flash_d), 
@@ -166,12 +167,14 @@ module tb;
             $fclose(n_File_ID);
         end
         $display("BaseRAM Init Size(words): %d",n_Init_Size);
-        // Changed original endian!!
         for (integer i = 0; i < n_Init_Size; i++) begin
-            base1.mem_array0[i] = tmp_array[i][0+:8];
-            base1.mem_array1[i] = tmp_array[i][8+:8];
-            base2.mem_array0[i] = tmp_array[i][16+:8];
-            base2.mem_array1[i] = tmp_array[i][24+:8];
+`ifdef REVERSE_ENDIAN
+            tmp_array[i] = reverse_endian(tmp_array[i]);        
+`endif
+            base1.mem_array0[i] = tmp_array[i][24+:8];
+            base1.mem_array1[i] = tmp_array[i][16+:8];
+            base2.mem_array0[i] = tmp_array[i][8+:8];
+            base2.mem_array1[i] = tmp_array[i][0+:8];
         end
     end
     
@@ -209,12 +212,14 @@ module tb;
         end
         
         $display("ExtRAM Init Size(words): %d",n_Init_Size);
-        // Changed original endian!!
         for (integer i = 0; i < n_Init_Size; i++) begin
-            ext1.mem_array0[i] = tmp_array[i][0+:8];
-            ext1.mem_array1[i] = tmp_array[i][8+:8];
-            ext2.mem_array0[i] = tmp_array[i][16+:8];
-            ext2.mem_array1[i] = tmp_array[i][24+:8];
+`ifdef REVERSE_ENDIAN
+            tmp_array[i] = reverse_endian(tmp_array[i]);        
+`endif
+            ext1.mem_array0[i] = tmp_array[i][24+:8];
+            ext1.mem_array1[i] = tmp_array[i][16+:8];
+            ext2.mem_array0[i] = tmp_array[i][8+:8];
+            ext2.mem_array1[i] = tmp_array[i][0+:8];
         end
         
         for (integer i = 0; i != n_Init_Size; ++i) begin
@@ -222,23 +227,9 @@ module tb;
         end
     end
     
-    //initial begin
-    //    reg [31:0] tmp_array[0:1048575];
-    //    tmp_array[0] = 'hac00ffff;  // sw zero, 0xffff(zero)
-    //    tmp_array[1] = 'h8c01ffff;  // lw $1, 0xffff(zero) 
-    //    $readmemh ( "inst_rom_9_3.data", tmp_array, 2);
-    //    // Note the endian /_ \
-    //    for (integer i = 0; i < (1 << 20); i++) begin
-    //         ext1.mem_array0[i] = tmp_array[i][0+:8];
-    //         ext1.mem_array1[i] = tmp_array[i][8+:8];
-    //         ext2.mem_array0[i] = tmp_array[i][16+:8];
-    //         ext2.mem_array1[i] = tmp_array[i][24+:8];
-    //     end
-    //end
-    
     function automatic [31:0] reverse_endian(input [31:0] x);
     begin
-        reverse_endian = {x[7:0], x[13:8], x[21:14], x[31:22]};
+        reverse_endian = {x[7:0], x[15:8], x[23:16], x[31:24]};
     end
     endfunction
     

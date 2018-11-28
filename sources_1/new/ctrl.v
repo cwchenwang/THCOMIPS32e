@@ -50,7 +50,6 @@ module Ctrl(
 	output reg[5:0]        stall       
 );
 
-
 	always @ (*) begin
 		if (rst == `RstEnable) begin
 			stall <= 6'b000000;
@@ -60,25 +59,25 @@ module Ctrl(
             flush <= 1'b1;
             stall <= 6'b000000;
 			case (excepttype_i)
-            32'h00000001:		begin   //interrupt
-                new_pc <= 32'h00000020;
+            32'h00000001: begin   //interrupt
+                new_pc <= `PC_INT_ADDR;
             end
-            32'h00000008:		begin   //syscall
-                new_pc <= 32'h00000040;
+            32'h00000008: begin   //syscall
+                new_pc <= `PC_SYSCALL_ADDR;
             end
-            32'h0000000a:		begin   //inst_invalid
-                new_pc <= 32'h00000040;
+            32'h0000000a: begin   //inst_invalid
+                new_pc <= `PC_INSTINVALID_ADDR;
             end
-            32'h0000000d:		begin   //trap
-                new_pc <= 32'h00000040;
+            32'h0000000d: begin   //trap
+                new_pc <= `PC_TRAP_ADDR;
             end
-            32'h0000000c:		begin   //ov
-                new_pc <= 32'h00000040;
+            32'h0000000c: begin   //ov
+                new_pc <= `PC_OVERFLOW_ADDR;
             end
-            32'h0000000e:		begin   //eret
-                new_pc <= cp0_epc_i;
+            32'h0000000e: begin   //eret
+                new_pc <= `PC_ERET_ADDR;
             end
-            default	: begin
+            default: begin
             end
 			endcase 						
 		end else if (stallreq_from_ex == `Stop) begin

@@ -295,3 +295,16 @@
 // Only meaningful when the instruction is of load type.
 `define LOAD_STORE_FROM_RAM 1'b0
 `define LOAD_STORE_FROM_ROM 1'b1
+
+// Reserved addresses for UART
+`define UART_DATA_ADDR 32'hBFD003F8
+`define UART_FLAG_ADDR 32'hBFD003FC
+
+`define PC_INIT_ADDR 32'h80000000
+`define PC_INT_ADDR 32'h80001180
+`define PC_SYSCALL_ADDR 32'h80001180
+`define PC_INSTINVALID_ADDR 32'h80001180
+`define PC_TRAP_ADDR 32'h80001180
+`define PC_OVERFLOW_ADDR 32'h80001180
+`define PC_ERET_ADDR 32'h80001180
+

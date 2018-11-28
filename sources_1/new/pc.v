@@ -60,9 +60,9 @@ module PC(
     // Resolve addr_o, pc_o, is_load_store_o, and update m_pc.
     always @(posedge clk) begin        
         if (ce_o == `ChipDisable) begin
-            addr_o <= 0;
-            pc_o <= 0;
-            m_pc <= 0;
+            addr_o <= `PC_INIT_ADDR;
+            pc_o <= `PC_INIT_ADDR;
+            m_pc <= `PC_INIT_ADDR;
             is_load_store_o <= 0;
         end else if (flush) begin
             addr_o <= new_pc;

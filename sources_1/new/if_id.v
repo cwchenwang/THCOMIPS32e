@@ -69,11 +69,11 @@ module IF_ID(
 		if (rst == `RstEnable) begin
 			id_pc <= `ZeroWord;
 			id_inst <= `ZeroWord;
-			last_pc <= 0;
+			last_pc <= `PC_INIT_ADDR;
 			last_inst <= 0;
 			last_stall <= 0;
 		end else if (flush) begin
-			id_pc <= `ZeroWord;
+			id_pc <= `PC_INIT_ADDR;
 			id_inst <= `ZeroWord;	
 		end else if (is_load_store && last_stall[1] == `Stop && stall[1] == `NoStop) begin	
             // Given is_load_store, we were still dealing with structural conflict;
@@ -82,7 +82,7 @@ module IF_ID(
             id_pc <= last_pc;
             id_inst <= last_inst;
 		end else if ((stall[1] == `Stop && stall[2] == `NoStop) || is_load_store) begin
-			id_pc <= `ZeroWord;
+			id_pc <= `PC_INIT_ADDR;
 			id_inst <= `ZeroWord;	
 		end else if (stall[1] == `NoStop) begin
 			id_pc <= if_pc;

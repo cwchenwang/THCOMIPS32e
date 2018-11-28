@@ -213,8 +213,8 @@ module thinpad_top(
 //    wire[5:0] interrupt = {5'b00000, timer_int, gpio_int, uart_int};
 
     // Disable UART
-    assign uart_rdn = 1;
-    assign uart_wrn = 1;
+//    assign uart_rdn = 1;
+//    assign uart_wrn = 1;
 
     RAMWrapper rom_wrapper(
        .clk(clk),
@@ -247,7 +247,13 @@ module thinpad_top(
         .ram_be_n(base_ram_be_n),
         .ram_ce_n(base_ram_ce_n),
         .ram_oe_n(base_ram_oe_n),
-        .ram_we_n(base_ram_we_n)
+        .ram_we_n(base_ram_we_n),
+        
+        .tbre(uart_tbre),
+        .tsre(uart_tsre),
+        .data_ready(uart_dataready),
+        .rdn(uart_rdn),
+        .wrn(uart_wrn)
     );
     
     THCOMIPS32e cpu(
