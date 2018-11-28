@@ -61,7 +61,7 @@ module THCOMIPS32e(
 	wire[`InstAddrBus] pc;
 	wire[`InstAddrBus] id_pc_i;
 	wire[`InstBus] id_inst_i;
-	wire pc_insert_nop_o;
+	wire is_load_store;
 	wire[`InstAddrBus] pc_addr_o;
 	wire pc_we_o;
 	wire[`AluOpBus] pc_aluop_o;
@@ -245,7 +245,7 @@ module THCOMIPS32e(
 		.data_o(pc_data_o),
 		.aluop_o(pc_aluop_o),
 		
-		.insert_nop_o(pc_insert_nop_o),
+		.is_load_store_o(is_load_store),
 		.pc_o(pc)
 	);
 	
@@ -258,7 +258,7 @@ module THCOMIPS32e(
 		.rst(rst),
 		.stall(stall),
 		.flush(flush),
-		.insert_nop(pc_insert_nop_o),
+		.is_load_store(is_load_store),
 		.if_pc(pc),
 		.if_inst(rom_data_i),
 		.id_pc(id_pc_i),

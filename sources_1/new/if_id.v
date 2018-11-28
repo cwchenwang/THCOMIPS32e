@@ -42,7 +42,7 @@ module IF_ID(
 	input wire                 flush,
 
     // From PC
-    input wire                 insert_nop,
+    input wire                 is_load_store,
     input wire[`InstAddrBus]   if_pc,
 	
 	// From ROM
@@ -75,13 +75,13 @@ module IF_ID(
 		end else if (flush) begin
 			id_pc <= `ZeroWord;
 			id_inst <= `ZeroWord;	
-		end else if (insert_nop && last_stall[1] && !stall[1]) begin	
-            // Given insert_nop, we were still dealing with structural conflict;
+		end else if (is_load_store && last_stall[1] == `Stop && stall[1] == `NoStop) begin	
+            // Given is_load_store, we were still dealing with structural conflict;
             // Changed from stalled to not stalled -> PC accepted a new state.
             // Therefore we have stored an instruction (last_inst), so send it to ID
             id_pc <= last_pc;
             id_inst <= last_inst;
-		end else if ((stall[1] == `Stop && stall[2] == `NoStop) || insert_nop) begin
+		end else if ((stall[1] == `Stop && stall[2] == `NoStop) || is_load_store) begin
 			id_pc <= `ZeroWord;
 			id_inst <= `ZeroWord;	
 		end else if (stall[1] == `NoStop) begin

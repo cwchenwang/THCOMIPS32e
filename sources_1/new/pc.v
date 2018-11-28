@@ -32,7 +32,7 @@ module PC(
     output reg[`AluOpBus] aluop_o,  // To determine to sel_i at the next stage
     
     // To IF/ID
-    output reg insert_nop_o,  // Shouldn't conflict with normal stall signal
+    output reg is_load_store_o,  // Shouldn't conflict with normal stall signal
     output reg[`InstAddrBus] pc_o     // Proper PC, equals data_o when rom_op_i is `ROM_OP_INST
 );
 
@@ -57,18 +57,18 @@ module PC(
         end
     end
 
-    // Resolve addr_o, pc_o, insert_nop_o, and update m_pc.
+    // Resolve addr_o, pc_o, is_load_store_o, and update m_pc.
     always @(posedge clk) begin        
         if (ce_o == `ChipDisable) begin
             addr_o <= 0;
             pc_o <= 0;
             m_pc <= 0;
-            insert_nop_o <= 0;
+            is_load_store_o <= 0;
         end else if (flush) begin
             addr_o <= new_pc;
             pc_o <= new_pc;
             m_pc <= new_pc;
-            insert_nop_o <= 0;
+            is_load_store_o <= 0;
         end else begin
             // Priority of structural conflict is higher than stall!!
             // When structural conflict (detected in EX) appears, stall can 
@@ -78,15 +78,15 @@ module PC(
            `ROM_OP_LOAD: begin
                addr_o <= rom_rw_addr_i;
                pc_o <= m_pc;
-               insert_nop_o <= 1;
+               is_load_store_o <= 1;
            end
            `ROM_OP_STORE: begin
                addr_o <= rom_rw_addr_i;
                pc_o <= m_pc;
-               insert_nop_o <= 1;
+               is_load_store_o <= 1;
            end
            default: begin
-                insert_nop_o <= 0;
+                is_load_store_o <= 0;
                 if (stall[0] == `NoStop) begin
                     if (branch_flag_i == `Branch) begin
                         addr_o <= branch_target_address_i;
