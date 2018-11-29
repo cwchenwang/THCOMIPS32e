@@ -45,7 +45,7 @@ module tb;
     
     //Windows需要注意路径分隔符的转义，例如"D:\\foo\\bar.bin"
     localparam BASE_RAM_INIT_FILE = "/tmp/main.bin"; //BaseRAM初始化文件，请修改为实际的绝对路径
-    localparam EXT_RAM_INIT_FILE = "kernel.bin";    //ExtRAM初始化文件，请修改为实际的绝对路径
+    localparam EXT_RAM_INIT_FILE = "kernel_rev.bin";    //ExtRAM初始化文件，请修改为实际的绝对路径
     localparam FLASH_INIT_FILE = "/tmp/kernel.elf";    //Flash初始化文件，请修改为实际的绝对路径
     
     assign rxd = 1'b1; //idle state
@@ -226,7 +226,7 @@ module tb;
             ext2.mem_array1[i] = tmp_array[i][0+:8];
         end
         
-        for (integer i = 0; i != n_Init_Size; ++i) begin
+        for (integer i = 0; i != (n_Init_Size < 16 ? n_Init_Size : 16); ++i) begin
             $display ("ROM[%h]: %h", i, tmp_array[i]);    
         end
     end
