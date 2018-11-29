@@ -40,16 +40,17 @@ module RAMWrapper(
     reg write_uart_prep;
     reg read_uart_prep;
     reg read_flag_prep;
-    reg[`RegBus] flag_value;
+    reg[7:0] flag_value;
 
     // Tri-state, write to either MEM or UART
-    assign ram_data = (ce_i == `ChipEnable && we_i == `WriteEnable) ? data_i : {`DataWidth{1'bz}};
+    assign ram_data = (ce_i == `ChipEnable && we_i == `WriteEnable) ? 
+        (write_uart_prep ? {24'bz, data_i[7:0]} : data_i) : {`DataWidth{1'bz}};
     
     // Read data_o from ram_data
     always @(*) begin
         if (ce_i == `ChipEnable && we_i == `WriteDisable) 
             // UART data / UART flags / MEM 
-            data_o <= read_flag_prep ? flag_value : ram_data;
+            data_o <= read_flag_prep ? {4{flag_value}} : ram_data;
         else
             data_o <= 0;
     end
