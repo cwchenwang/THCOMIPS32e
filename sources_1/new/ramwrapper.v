@@ -110,7 +110,7 @@ module RAMWrapper(
         end else begin
             ram_ce_n <= 0;
             if (we_i == `WriteEnable) begin
-                if (addr_i == `UART_DATA_ADDR) begin
+                if ((addr_i & ~(32'b111)) == (`UART_DATA_ADDR & ~(32'b111))) begin
                     // Write UART
                     ram_oe_n <= 1;
                     ram_ce_n <= 1;
@@ -123,18 +123,20 @@ module RAMWrapper(
                     ram_be_n <= ~sel_i;  // Happily, their meanings are almost the same
                 end
             end else begin
-                if (addr_i == `UART_DATA_ADDR) begin 
-                    // Read UART
-                    ram_oe_n <= 1;
-                    ram_ce_n <= 1;
-                    ram_we_n <= 1;
-                    read_uart_prep <= 1;
-                end else if (addr_i == `UART_FLAG_ADDR) begin
-                    // Read UART flags
-                    ram_oe_n <= 1;
-                    ram_ce_n <= 1;
-                    ram_we_n <= 1;
-                    read_flag_prep <= 1;
+                if ((addr_i & ~(32'b111)) == (`UART_DATA_ADDR & ~(32'b111))) begin 
+                    if (addr_i >= `UART_FLAG_ADDR) begin 
+                        // Read UART flags
+                        ram_oe_n <= 1;
+                        ram_ce_n <= 1;
+                        ram_we_n <= 1;
+                        read_flag_prep <= 1;
+                    end else begin
+                        // Read UART
+                        ram_oe_n <= 1;
+                        ram_ce_n <= 1;
+                        ram_we_n <= 1;
+                        read_uart_prep <= 1;
+                    end
                 end else begin 
                     // Normal read
                     ram_oe_n <= 0;

@@ -369,8 +369,12 @@ module EX(
 			hilo_temp_o <= {`ZeroWord,`ZeroWord};
 			cnt_o <= 2'b00;
 			stallreq_for_madd_msub <= `NoStop;
+			hilo_temp1 <= 0; // Useless
 
 		end else begin
+            hilo_temp_o <= 0;   // Useless
+            hilo_temp1 <= 0;    // Useless
+		
 			case (aluop_i) 
 			`EXE_MADD_OP, `EXE_MADDU_OP: begin
 				if(cnt_i == 2'b00) begin
@@ -383,6 +387,10 @@ module EX(
 					cnt_o <= 2'b10;
 					hilo_temp1 <= hilo_temp_i + {HI,LO};
 					stallreq_for_madd_msub <= `NoStop;
+				end else begin
+				    // Useless
+				    cnt_o <= cnt_i + 1; 
+                    stallreq_for_madd_msub <= `NoStop;
 				end
 			end
 			`EXE_MSUB_OP, `EXE_MSUBU_OP: begin
@@ -395,7 +403,10 @@ module EX(
 					cnt_o <= 2'b10;
 					hilo_temp1 <= hilo_temp_i + {HI,LO};
 					stallreq_for_madd_msub <= `NoStop;
-				end				
+				end	else begin
+				    cnt_o <= cnt_i + 1; // Useless
+				    stallreq_for_madd_msub <= `NoStop;  // Useless
+				end			
 			end
 			default: begin
 				hilo_temp_o <= {`ZeroWord,`ZeroWord};
@@ -471,6 +482,7 @@ module EX(
 
 	//MFHI¡¢MFLO¡¢MOVN¡¢MOVZÖ¸Áî
 	always @ (*) begin
+        cp0_reg_read_addr_o <= 0;   // Useless
 		if(rst == `RstEnable) begin
 	  		moveres <= `ZeroWord;
 		end else begin

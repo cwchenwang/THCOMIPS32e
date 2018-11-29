@@ -2,7 +2,9 @@
 `timescale 1ns / 1ps
 `include "defines.vh"
 
-module thinpad_top(
+module thinpad_top 
+    #(parameter clk_opt = `USE_CLOCK_BTN) 
+(
     input wire clk_50M,           //50MHz 时钟输入
     input wire clk_11M0592,       //11.0592MHz 时钟输入
 
@@ -124,48 +126,47 @@ module thinpad_top(
     // f=dpy0[6] // e     c
     // g=dpy0[7] // |     |
     //           // ---d---  p
+     
+//    //直连串口接收发送演示，从直连串口收到的数据再发送出去
+//    wire [7:0] ext_uart_rx;
+//    reg  [7:0] ext_uart_buffer, ext_uart_tx;
+//    wire ext_uart_ready, ext_uart_busy;
+//    reg ext_uart_start, ext_uart_avai;
     
-    
-    //直连串口接收发送演示，从直连串口收到的数据再发送出去
-    wire [7:0] ext_uart_rx;
-    reg  [7:0] ext_uart_buffer, ext_uart_tx;
-    wire ext_uart_ready, ext_uart_busy;
-    reg ext_uart_start, ext_uart_avai;
-    
-    async_receiver #(.ClkFrequency(50000000),.Baud(9600)) //接收模块，9600无检验位
-        ext_uart_r(
-            .clk(clk_50M),                       //外部时钟信号
-            .RxD(rxd),                           //外部串行信号输入
-            .RxD_data_ready(ext_uart_ready),  //数据接收到标志
-            .RxD_clear(ext_uart_ready),       //清除接收标志
-            .RxD_data(ext_uart_rx)             //接收到的一字节数据
-        );
+//    async_receiver #(.ClkFrequency(50000000),.Baud(9600)) //接收模块，9600无检验位
+//        ext_uart_r(
+//            .clk(clk_50M),                       //外部时钟信号
+//            .RxD(rxd),                           //外部串行信号输入
+//            .RxD_data_ready(ext_uart_ready),  //数据接收到标志
+//            .RxD_clear(ext_uart_ready),       //清除接收标志
+//            .RxD_data(ext_uart_rx)             //接收到的一字节数据
+//        );
         
-    always @(posedge clk_50M) begin //接收到缓冲区ext_uart_buffer
-        if(ext_uart_ready)begin
-            ext_uart_buffer <= ext_uart_rx;
-            ext_uart_avai <= 1;
-        end else if(!ext_uart_busy && ext_uart_avai)begin 
-            ext_uart_avai <= 0;
-        end
-    end
-    always @(posedge clk_50M) begin //将缓冲区ext_uart_buffer发送出去
-        if(!ext_uart_busy && ext_uart_avai)begin 
-            ext_uart_tx <= ext_uart_buffer;
-            ext_uart_start <= 1;
-        end else begin 
-            ext_uart_start <= 0;
-        end
-    end
+//    always @(posedge clk_50M) begin //接收到缓冲区ext_uart_buffer
+//        if(ext_uart_ready)begin
+//            ext_uart_buffer <= ext_uart_rx;
+//            ext_uart_avai <= 1;
+//        end else if(!ext_uart_busy && ext_uart_avai)begin 
+//            ext_uart_avai <= 0;
+//        end
+//    end
+//    always @(posedge clk_50M) begin //将缓冲区ext_uart_buffer发送出去
+//        if(!ext_uart_busy && ext_uart_avai)begin 
+//            ext_uart_tx <= ext_uart_buffer;
+//            ext_uart_start <= 1;
+//        end else begin 
+//            ext_uart_start <= 0;
+//        end
+//    end
     
-    async_transmitter #(.ClkFrequency(50000000),.Baud(9600)) //发送模块，9600无检验位
-        ext_uart_t(
-            .clk(clk_50M),                  //外部时钟信号
-            .TxD(txd),                      //串行信号输出
-            .TxD_busy(ext_uart_busy),       //发送器忙状态指示
-            .TxD_start(ext_uart_start),    //开始发送信号
-            .TxD_data(ext_uart_tx)        //待发送的数据
-        );
+//    async_transmitter #(.ClkFrequency(50000000),.Baud(9600)) //发送模块，9600无检验位
+//        ext_uart_t(
+//            .clk(clk_50M),                  //外部时钟信号
+//            .TxD(txd),                      //串行信号输出
+//            .TxD_busy(ext_uart_busy),       //发送器忙状态指示
+//            .TxD_start(ext_uart_start),    //开始发送信号
+//            .TxD_data(ext_uart_tx)        //待发送的数据
+//        );
     
     //图像输出演示，分辨率800x600@75Hz，像素时钟为50MHz
     wire [11:0] hdata;
@@ -184,13 +185,23 @@ module thinpad_top(
     
     /* =========== Demo code end =========== */
     
-    wire clk = clk_50M;
-//    reg clk = 0;
-//    always @(posedge clk_50M)
-//        clk = !clk;
-        
     wire rst = reset_btn;
-
+//    wire clk = clock_btn;
+    
+    reg clk_25M = 0;
+    always @(posedge clk_50M)
+        clk_25M = !clk_25M;    
+    reg clk;
+    always @(*) begin
+        case (clk_opt)
+        `USE_CLOCK_50M:     clk <= clk_50M;
+        `USE_CLOCK_25M:     clk <= clk_25M;
+        `USE_CLOCK_11M0592: clk <= clk_11M0592;
+        `USE_CLOCK_BTN:     clk <= clock_btn;
+        default:            clk <= clock_btn;
+        endcase    
+    end
+    
     // Instruction memory
     wire[`InstAddrBus] inst_addr;
     wire rom_ce;
@@ -211,10 +222,6 @@ module thinpad_top(
     wire timer_int;
     wire[5:0] interrupt = {5'b00000, timer_int};
 //    wire[5:0] interrupt = {5'b00000, timer_int, gpio_int, uart_int};
-
-    // Disable UART
-//    assign uart_rdn = 1;
-//    assign uart_wrn = 1;
 
     RAMWrapper rom_wrapper(
        .clk(clk),
@@ -277,5 +284,15 @@ module thinpad_top(
         .int_i(interrupt),
         .timer_int_o(timer_int)			
     );
+    
+    SEG7_LUT hi_seg(dpy1, cpu.pc[7:4]),
+            lo_seg(dpy0, cpu.pc[3:0]);
+    
+//    assign leds = {uart_dataready, uart_tbre, uart_tsre, cpu.pc[12:0]}; 
+    assign leds = {
+        uart_dataready, uart_tbre, uart_tsre,
+        ram_wrapper.read_flag_prep, ram_wrapper.read_uart_prep, ram_wrapper.write_uart_prep,
+        cpu.pc[9:0]
+    };
 
 endmodule

@@ -38,7 +38,7 @@ module ID_EX(
 	input wire					rst,
 
 	//来自控制模块的信息
-	input wire[5:0]				stall,
+	input wire[4:0]            stall,
 	input wire                  flush,
 	
 	//从译码阶段传递的信息
@@ -101,7 +101,7 @@ module ID_EX(
 			ex_is_in_delayslot <= `NotInDelaySlot;
             ex_current_inst_address <= `ZeroWord;	
             is_in_delayslot_o <= `NotInDelaySlot;		    
-		end else if(stall[2] == `Stop && stall[3] == `NoStop) begin
+		end else if(stall[1] == `Stop && stall[2] == `NoStop) begin
 			ex_aluop <= `EXE_NOP_OP;
 			ex_alusel <= `EXE_RES_NOP;
 			ex_reg1 <= `ZeroWord;
@@ -113,7 +113,7 @@ module ID_EX(
             ex_inst <= `ZeroWord;			
             ex_excepttype <= `ZeroWord;
             ex_current_inst_address <= `ZeroWord;	
-		end else if(stall[2] == `NoStop) begin		
+		end else if(stall[1] == `NoStop) begin		
 			ex_aluop <= id_aluop;
 			ex_alusel <= id_alusel;
 			ex_reg1 <= id_reg1;

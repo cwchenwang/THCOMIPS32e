@@ -49,13 +49,13 @@ module THCOMIPS32e(
 	
 	//连接数据存储器data_ram
 	input wire[`RegBus]			ram_data_i,
-	output wire[`RegBus]        ram_addr_o,
-	output wire[`RegBus]        ram_data_o,
-	output wire                 ram_we_o,
-	output wire[3:0]            ram_sel_o,
-	output wire                 ram_ce_o,
+	output wire[`RegBus]       ram_addr_o,
+	output wire[`RegBus]       ram_data_o,
+	output wire                ram_we_o,
+	output wire[3:0]           ram_sel_o,
+	output wire                ram_ce_o,
 	
-	output wire                 timer_int_o
+	output wire                timer_int_o
 );
     // PC output
 	wire[`InstAddrBus] pc;
@@ -201,7 +201,7 @@ module THCOMIPS32e(
 	wire id_branch_flag_o;
 	wire[`RegBus] branch_target_address;
 
-	wire[5:0] stall;
+	wire[4:0] stall;
 	wire stallreq_from_id;	
 	wire stallreq_from_ex;
 //	wire struct_conflict_from_ex;
@@ -587,7 +587,7 @@ module THCOMIPS32e(
         .current_inst_address_o(mem_current_inst_address_o)		
 	);
 
-  //MEM/WB模块
+    // MEM/WB模块
 	MEM_WB mem_wb(
         .clk(clk),
         .rst(rst),

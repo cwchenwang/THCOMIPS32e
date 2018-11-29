@@ -11,7 +11,7 @@ module PC(
     
     // From CTRL
     input wire flush,
-    input wire[5:0] stall,  // TODO: maybe not all 6 bits are necessary
+    input wire[4:0] stall,  // TODO: maybe not all 6 bits are necessary
     input wire[`InstAddrBus] new_pc,    
     
     // From ID

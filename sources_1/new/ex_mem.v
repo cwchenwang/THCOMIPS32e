@@ -37,7 +37,7 @@ module EX_MEM(
 	input wire rst,
 
 	//来自控制模块的信息
-	input wire[5:0] stall,	
+	input wire[4:0] stall,	
 	input wire flush,
 	
 	//来自执行阶段的信息	
@@ -134,7 +134,7 @@ module EX_MEM(
 			mem_current_inst_address <= `ZeroWord;
 			hilo_o <= {`ZeroWord, `ZeroWord};
 			cnt_o <= 2'b00;	    	    				
-		end else if (stall[3] == `Stop && stall[4] == `NoStop) begin
+		end else if (stall[2] == `Stop && stall[3] == `NoStop) begin
 			mem_wd <= `NOPRegAddr;
 			mem_wreg <= `WriteDisable;
 			mem_wdata <= `ZeroWord;
@@ -152,7 +152,7 @@ module EX_MEM(
 			mem_excepttype <= `ZeroWord;
 			mem_is_in_delayslot <= `NotInDelaySlot;
 			mem_current_inst_address <= `ZeroWord;						  				    
-		end else if (stall[3] == `NoStop) begin
+		end else if (stall[2] == `NoStop) begin
 			mem_wd <= ex_wd;
 			mem_wreg <= ex_wreg;
 			mem_wdata <= ex_wdata;	

@@ -1,4 +1,5 @@
 `timescale 1ns / 1ps
+`include "defines.vh"
 
 //`define LOAD_PREAMBLE
 //`define REVERSE_ENDIAN    // Enable this when using bin files from the book
@@ -60,8 +61,11 @@ module tb;
     //        clock_btn = 0; //松开手工时钟按钮
     //    end 
         reset_btn = 1;
-        #195 reset_btn = 0;
+        #100 reset_btn = 0;
     end
+    
+    always @(posedge clk_50M)
+        clock_btn = !clock_btn; // 25M
     
     thinpad_top dut(
         .clk_50M(clk_50M),

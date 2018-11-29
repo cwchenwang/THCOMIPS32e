@@ -168,6 +168,7 @@ module MEM(
 			mem_we <= `WriteDisable;
 			mem_addr_o <= `ZeroWord;
 			mem_sel_o <= 4'b1111;
+			mem_data_o <= `ZeroWord; // Useless
 			mem_ce_o <= `ChipDisable;
 			LLbit_we_o <= 1'b0;
 			LLbit_value_o <= 1'b0;		
@@ -489,6 +490,7 @@ module MEM(
 			cp0_cause <= `ZeroWord;
 		end else if (wb_cp0_reg_we == `WriteEnable
 		              && wb_cp0_reg_write_addr == `CP0_REG_CAUSE) begin
+            cp0_cause <= 0;     // Useless
 			cp0_cause[9:8] <= wb_cp0_reg_data[9:8];
 			cp0_cause[22] <= wb_cp0_reg_data[22];
 			cp0_cause[23] <= wb_cp0_reg_data[23];

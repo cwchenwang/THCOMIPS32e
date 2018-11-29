@@ -47,17 +47,17 @@ module Ctrl(
 
 	output reg[`RegBus]    new_pc,
 	output reg             flush,	
-	output reg[5:0]        stall       
+	output reg[4:0]        stall       
 );
 
 	always @ (*) begin
 		if (rst == `RstEnable) begin
-			stall <= 6'b000000;
+			stall <= 5'b00000;
 			flush <= 1'b0;
-			new_pc <= `ZeroWord;
+			new_pc <= `PC_INIT_ADDR;
 		end else if (excepttype_i != `ZeroWord) begin
-            flush <= 1'b1;
-            stall <= 6'b000000;
+            stall <= 5'b00000;
+			flush <= 1'b1;
 			case (excepttype_i)
             32'h00000001: begin   //interrupt
                 new_pc <= `PC_INT_ADDR;
@@ -78,23 +78,23 @@ module Ctrl(
                 new_pc <= `PC_ERET_ADDR;
             end
             default: begin
+                new_pc <= `PC_INSTINVALID_ADDR; // Not used
             end
 			endcase 						
 		end else if (stallreq_from_ex == `Stop) begin
-            stall <= 6'b001111;
+            // Stall EX, insert nop to MEM
+            stall <= 5'b00111;
             flush <= 1'b0;		
+            new_pc <= `PC_INIT_ADDR;    // Not used
 		end else if (stallreq_from_id == `Stop) begin
-            // The following causes EX to get a nop in the next cycle and ID to 
-            // keep as it is.
-            // NOTE: when structral conflict is detected by EX, it should be fine 
-            // to set stall = 6'b000011, s.t., stall[1] && !stall[2] -> ID gets a nop.
-            // After that, IF_ID inserts a nop
-			stall <= 6'b000111;	
+            // Stall ID, insert nop to EX
+			stall <= 5'b00011;	
 			flush <= 1'b0;
+			new_pc <= `PC_INIT_ADDR;     // Not used
 		end else begin
-			stall <= 6'b000000;
+			stall <= 5'b00000;
 			flush <= 1'b0;
-			new_pc <= `ZeroWord;		
+			new_pc <= `PC_INIT_ADDR;		
 		end    //if
 	end      //always
 			
