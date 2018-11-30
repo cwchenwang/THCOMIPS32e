@@ -38,16 +38,13 @@ module Ctrl(
 
 	input wire[31:0]       excepttype_i,
 	input wire[`RegBus]    cp0_epc_i,
-
+	
 	input wire             stallreq_from_id,
-
-	//来自执行阶段的暂停请求
     input wire             stallreq_from_ex,
-//    input wire             struct_conflict_from_ex,
 
 	output reg[`RegBus]    new_pc,
 	output reg             flush,	
-	output reg[4:0]        stall       
+	output reg[4:0]        stall
 );
 
 	always @ (*) begin
@@ -80,7 +77,7 @@ module Ctrl(
             default: begin
                 new_pc <= `PC_INSTINVALID_ADDR; // Not used
             end
-			endcase 						
+			endcase 	
 		end else if (stallreq_from_ex == `Stop) begin
             // Stall EX, insert nop to MEM
             stall <= 5'b00111;

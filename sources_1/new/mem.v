@@ -76,9 +76,8 @@ module MEM(
 	input wire[4:0]             wb_cp0_reg_write_addr,
 	input wire[`RegBus]         wb_cp0_reg_data,
 	
-	// Structural conflict
-	input wire					mem_src_i,	// From EX_MEM
-	input wire[`RegBus]			rom_data_i,	// From ROM
+	// From ROM
+	input wire[`RegBus]			rom_data_i,
 	
 	//送到回写阶段的信息
 	output reg[`RegAddrBus]		wd_o,
@@ -117,7 +116,8 @@ module MEM(
 	reg mem_we;
 	
 	// The actual data to load from either RAM or ROM
-	wire[`RegBus] ld_data = mem_src_i == `LOAD_STORE_FROM_RAM ? mem_data_i : rom_data_i;
+	assign mem_src = mem_addr_i[22] ? `LOAD_STORE_RAM_OR_UART : `LOAD_STORE_ROM;
+	wire[`RegBus] ld_data = mem_src == `LOAD_STORE_RAM_OR_UART ? mem_data_i : rom_data_i;
 
 	assign mem_we_o = mem_we & (~(|excepttype_o));
 	assign zero32 = `ZeroWord;
@@ -180,10 +180,9 @@ module MEM(
 			`EXE_LB_OP: begin
 				mem_addr_o <= mem_addr_i;
 				mem_we <= `WriteDisable;
-//                mem_ce_o <= `ChipEnable;	
 				// Should be fine to leave RAM reading while we actually access ROM,
 				// but just in case... 
-				mem_ce_o <= mem_src_i == `LOAD_STORE_FROM_RAM ? `ChipEnable : `ChipDisable;
+				mem_ce_o <= mem_src == `LOAD_STORE_RAM_OR_UART ? `ChipEnable : `ChipDisable;
 				case (mem_addr_i[1:0])
                 2'b00: begin
                     wdata_o <= {{24{ld_data[31]}}, ld_data[31:24]};
@@ -209,8 +208,7 @@ module MEM(
 			`EXE_LBU_OP: begin
 				mem_addr_o <= mem_addr_i;
 				mem_we <= `WriteDisable;
-//				mem_ce_o <= `ChipEnable;
-                mem_ce_o <= mem_src_i == `LOAD_STORE_FROM_RAM ? `ChipEnable : `ChipDisable;
+                mem_ce_o <= mem_src == `LOAD_STORE_RAM_OR_UART ? `ChipEnable : `ChipDisable;
 				case (mem_addr_i[1:0])
                 2'b00: begin
                     wdata_o <= {{24{1'b0}}, ld_data[31:24]};
@@ -236,8 +234,7 @@ module MEM(
 			`EXE_LH_OP: begin
 				mem_addr_o <= mem_addr_i;
 				mem_we <= `WriteDisable;
-//				mem_ce_o <= `ChipEnable;
-                mem_ce_o <= mem_src_i == `LOAD_STORE_FROM_RAM ? `ChipEnable : `ChipDisable;
+                mem_ce_o <= mem_src == `LOAD_STORE_RAM_OR_UART ? `ChipEnable : `ChipDisable;
 				case (mem_addr_i[1:0])
                 2'b00: begin
                     wdata_o <= {{16{ld_data[31]}}, ld_data[31:16]};
@@ -255,8 +252,7 @@ module MEM(
 			`EXE_LHU_OP: begin
 				mem_addr_o <= mem_addr_i;
 				mem_we <= `WriteDisable;
-//				mem_ce_o <= `ChipEnable;
-                mem_ce_o <= mem_src_i == `LOAD_STORE_FROM_RAM ? `ChipEnable : `ChipDisable;
+                mem_ce_o <= mem_src == `LOAD_STORE_RAM_OR_UART ? `ChipEnable : `ChipDisable;
 				case (mem_addr_i[1:0])
                 2'b00: begin
                     wdata_o <= {{16{1'b0}}, ld_data[31:16]};
@@ -276,15 +272,13 @@ module MEM(
 				mem_we <= `WriteDisable;
 				wdata_o <= ld_data;
 				mem_sel_o <= 4'b1111;		
-//				mem_ce_o <= `ChipEnable;
-                mem_ce_o <= mem_src_i == `LOAD_STORE_FROM_RAM ? `ChipEnable : `ChipDisable;
+                mem_ce_o <= mem_src == `LOAD_STORE_RAM_OR_UART ? `ChipEnable : `ChipDisable;
 			end
 			`EXE_LWL_OP: begin
 				mem_addr_o <= {mem_addr_i[31:2], 2'b00};
 				mem_we <= `WriteDisable;
 				mem_sel_o <= 4'b1111;
-//				mem_ce_o <= `ChipEnable;
-                mem_ce_o <= mem_src_i == `LOAD_STORE_FROM_RAM ? `ChipEnable : `ChipDisable;
+                mem_ce_o <= mem_src == `LOAD_STORE_RAM_OR_UART ? `ChipEnable : `ChipDisable;
 				case (mem_addr_i[1:0])
                 2'b00: begin
                     wdata_o <= ld_data[31:0];
@@ -307,8 +301,7 @@ module MEM(
 				mem_addr_o <= {mem_addr_i[31:2], 2'b00};
 				mem_we <= `WriteDisable;
 				mem_sel_o <= 4'b1111;
-//				mem_ce_o <= `ChipEnable;
-                mem_ce_o <= mem_src_i == `LOAD_STORE_FROM_RAM ? `ChipEnable : `ChipDisable;
+                mem_ce_o <= mem_src == `LOAD_STORE_RAM_OR_UART ? `ChipEnable : `ChipDisable;
 				case (mem_addr_i[1:0])
                 2'b00: begin
                     wdata_o <= {reg2_i[31:8], ld_data[31:24]};
@@ -334,15 +327,13 @@ module MEM(
 		  		LLbit_we_o <= 1'b1;
 		  		LLbit_value_o <= 1'b1;
 		  		mem_sel_o <= 4'b1111;					
-//		  		mem_ce_o <= `ChipEnable;
-                mem_ce_o <= mem_src_i == `LOAD_STORE_FROM_RAM ? `ChipEnable : `ChipDisable;
+                mem_ce_o <= mem_src == `LOAD_STORE_RAM_OR_UART ? `ChipEnable : `ChipDisable;
 			end				
 			`EXE_SB_OP: begin
 				mem_addr_o <= mem_addr_i;
 				mem_we <= `WriteEnable;
 				mem_data_o <= {4{reg2_i[7:0]}};
-//				mem_ce_o <= `ChipEnable;
-                mem_ce_o <= mem_src_i == `LOAD_STORE_FROM_RAM ? `ChipEnable : `ChipDisable;
+                mem_ce_o <= mem_src == `LOAD_STORE_RAM_OR_UART ? `ChipEnable : `ChipDisable;
 				case (mem_addr_i[1:0])
                 2'b00: begin
                     mem_sel_o <= 4'b1000;
@@ -365,8 +356,7 @@ module MEM(
 				mem_addr_o <= mem_addr_i;
 				mem_we <= `WriteEnable;
 				mem_data_o <= {2{reg2_i[15:0]}};
-//				mem_ce_o <= `ChipEnable;
-                mem_ce_o <= mem_src_i == `LOAD_STORE_FROM_RAM ? `ChipEnable : `ChipDisable;
+                mem_ce_o <= mem_src == `LOAD_STORE_RAM_OR_UART ? `ChipEnable : `ChipDisable;
 				case (mem_addr_i[1:0])
                 2'b00: begin
                     mem_sel_o <= 4'b1100;
@@ -384,14 +374,12 @@ module MEM(
 				mem_we <= `WriteEnable;
 				mem_data_o <= reg2_i;
 				mem_sel_o <= 4'b1111;			
-//				mem_ce_o <= `ChipEnable;
-                mem_ce_o <= mem_src_i == `LOAD_STORE_FROM_RAM ? `ChipEnable : `ChipDisable;
+                mem_ce_o <= mem_src == `LOAD_STORE_RAM_OR_UART ? `ChipEnable : `ChipDisable;
 			end
 			`EXE_SWL_OP: begin
 				mem_addr_o <= {mem_addr_i[31:2], 2'b00};
 				mem_we <= `WriteEnable;
-//				mem_ce_o <= `ChipEnable;
-                mem_ce_o <= mem_src_i == `LOAD_STORE_FROM_RAM ? `ChipEnable : `ChipDisable;
+                mem_ce_o <= mem_src == `LOAD_STORE_RAM_OR_UART ? `ChipEnable : `ChipDisable;
 				case (mem_addr_i[1:0])
                 2'b00: begin						  
                     mem_sel_o <= 4'b1111;
@@ -417,8 +405,7 @@ module MEM(
 			`EXE_SWR_OP: begin
 				mem_addr_o <= {mem_addr_i[31:2], 2'b00};
 				mem_we <= `WriteEnable;
-//				mem_ce_o <= `ChipEnable;
-                mem_ce_o <= mem_src_i == `LOAD_STORE_FROM_RAM ? `ChipEnable : `ChipDisable;
+                mem_ce_o <= mem_src == `LOAD_STORE_RAM_OR_UART ? `ChipEnable : `ChipDisable;
 				case (mem_addr_i[1:0])
                 2'b00: begin						  
                     mem_sel_o <= 4'b1000;
@@ -450,8 +437,7 @@ module MEM(
 					mem_data_o <= reg2_i;
 					wdata_o <= 32'b1;
 					mem_sel_o <= 4'b1111;		
-//					mem_ce_o <= `ChipEnable;
-                    mem_ce_o <= mem_src_i == `LOAD_STORE_FROM_RAM ? `ChipEnable : `ChipDisable;
+                    mem_ce_o <= mem_src == `LOAD_STORE_RAM_OR_UART ? `ChipEnable : `ChipDisable;
 				end else begin
 					wdata_o <= 32'b0;
 				end

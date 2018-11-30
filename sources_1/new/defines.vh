@@ -291,10 +291,8 @@
 `define ROM_OP_STORE 2'b01
 `define ROM_OP_INST 2'b10  // incl, 2'b11s
 
-// Values of EX::ld_src_o, MEM::ld_src_i, MEM::ld_src_o, MEM_WB::ld_src
-// Only meaningful when the instruction is of load type.
-`define LOAD_STORE_FROM_RAM 1'b0
-`define LOAD_STORE_FROM_ROM 1'b1
+`define LOAD_STORE_RAM_OR_UART 1'b1
+`define LOAD_STORE_ROM 1'b0
 
 // Reserved addresses for UART
 `define UART_DATA_ADDR 32'hBFD003F8

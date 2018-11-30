@@ -2,9 +2,7 @@
 `timescale 1ns / 1ps
 `include "defines.vh"
 
-module thinpad_top 
-    #(parameter clk_opt = `USE_CLOCK_11M0592) 
-(
+module thinpad_top #(parameter clk_opt = `USE_CLOCK_11M0592)(
     input wire clk_50M,           //50MHz 时钟输入
     input wire clk_11M0592,       //11.0592MHz 时钟输入
 
@@ -190,15 +188,19 @@ module thinpad_top
     
     reg clk_25M = 0;
     always @(posedge clk_50M)
-        clk_25M = !clk_25M;    
+        clk_25M = !clk_25M;   
+//    reg clk_5M5296 = 0;
+//    always @(posedge clk_11M0592)
+//        clk_5M5296 = !clk_5M5296;
     reg clk;
     always @(*) begin
         case (clk_opt)
         `USE_CLOCK_50M:     clk <= clk_50M;
         `USE_CLOCK_25M:     clk <= clk_25M;
         `USE_CLOCK_11M0592: clk <= clk_11M0592;
+//        `USE_CLOCK_5M5296:  clk <= clk_5M5296;
         `USE_CLOCK_BTN:     clk <= clock_btn;
-        default:            clk <= clock_btn;
+        default:            clk <= clk_11M0592;
         endcase    
     end
     
@@ -285,14 +287,14 @@ module thinpad_top
         .timer_int_o(timer_int)			
     );
     
-    SEG7_LUT hi_seg(dpy1, cpu.pc[7:4]),
-            lo_seg(dpy0, cpu.pc[3:0]);
+    SEG7_LUT hi_seg(dpy1, cpu.regfile.regs[17][7:4]),
+            lo_seg(dpy0, cpu.regfile.regs[17][3:0]);
     
-//    assign leds = {uart_dataready, uart_tbre, uart_tsre, cpu.pc[12:0]}; 
+//    assign leds = {uart_dataready, uart_tbre, uart_tsre, cpu.pc_value[12:0]}; 
     assign leds = {
         uart_dataready, uart_tbre, uart_tsre,
         ram_wrapper.read_flag_prep, ram_wrapper.read_uart_prep, ram_wrapper.write_uart_prep,
-        cpu.pc[9:0]
+        cpu.pc_value[9:0]
     };
 
 endmodule

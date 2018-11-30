@@ -30,6 +30,7 @@
 // Revision: 1.0
 //////////////////////////////////////////////////////////////////////
 
+`timescale 1ns / 1ps
 `include "defines.vh"
 
 module EX_MEM(
@@ -64,12 +65,6 @@ module EX_MEM(
 	input wire ex_is_in_delayslot,
 	input wire[`RegBus] ex_current_inst_address,
 	
-	// Added for structural conflict
-	input wire mem_src_i,
-	
-	// Added for structural conflict
-	output reg mem_src_o,
-	
 	//送到访存阶段的信息
 	output reg[`RegAddrBus] mem_wd,
 	output reg mem_wreg,
@@ -96,8 +91,6 @@ module EX_MEM(
 );
 
 	always @ (posedge clk) begin
-		mem_src_o <= mem_src_i;	// This should suffice
-
 		if (rst == `RstEnable) begin
 			mem_wd <= `NOPRegAddr;
 			mem_wreg <= `WriteDisable;

@@ -2,7 +2,7 @@
 `include "defines.vh"
 
 //`define LOAD_PREAMBLE
-//`define REVERSE_ENDIAN    // Enable this when using bin files from the book
+`define REVERSE_ENDIAN    // Enable this when using bin files from the book
 
 module tb;
     wire clk_50M, clk_11M0592;
@@ -45,7 +45,7 @@ module tb;
     
     //Windows需要注意路径分隔符的转义，例如"D:\\foo\\bar.bin"
     localparam BASE_RAM_INIT_FILE = "/tmp/main.bin"; //BaseRAM初始化文件，请修改为实际的绝对路径
-    localparam EXT_RAM_INIT_FILE = "kernel_rev.bin";    //ExtRAM初始化文件，请修改为实际的绝对路径
+    localparam EXT_RAM_INIT_FILE = "inst_rom_9_1b.bin";    //ExtRAM初始化文件，请修改为实际的绝对路径
     localparam FLASH_INIT_FILE = "/tmp/kernel.elf";    //Flash初始化文件，请修改为实际的绝对路径
     
     assign rxd = 1'b1; //idle state

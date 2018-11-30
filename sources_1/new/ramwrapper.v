@@ -50,7 +50,8 @@ module RAMWrapper(
     always @(*) begin
         if (ce_i == `ChipEnable && we_i == `WriteDisable) 
             // UART data / UART flags / MEM 
-            data_o <= read_flag_prep ? {4{flag_value}} : ram_data;
+            data_o <= read_flag_prep ? {4{flag_value}} : 
+                read_uart_prep ? {4{ram_data[7:0]}} : ram_data;
         else
             data_o <= 0;
     end

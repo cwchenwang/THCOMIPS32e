@@ -64,10 +64,16 @@ module IF_ID(
             last_inst <= 0;
             last_stall <= 0;        
         end else begin
+            if (if_pc != last_pc) begin
+                // When a normal stall is requested when ROM is loading / storing,
+                // if_inst becomes:
+                // t = 0: instruction 
+                // t = 1: ?? (writing to ROM)
+                // t = 2: ??
+                last_inst <= if_inst;
+                last_pc <= if_pc;
+            end
             last_stall <= stall;
-//            if (if_pc != last_pc)   // Maybe redundant condition
-            last_inst <= if_inst;
-            last_pc <= if_pc;
         end
     end
 
@@ -80,8 +86,8 @@ module IF_ID(
 			id_inst <= `ZeroWord;	
 		end else if (is_load_store && last_stall[0] == `Stop && stall[0] == `NoStop) begin	
             // Given is_load_store, we were still dealing with structural conflict;
-            // Changed from stalled to not stalled -> PC accepted a new state.
-            // Therefore we have stored an instruction (last_inst), so send it to ID
+            // Changed from stalled to not stalled -> we have stored an instruction 
+            // (last_inst), so send it to ID.
             id_pc <= last_pc;
             id_inst <= last_inst;
 		end else if ((stall[0] == `Stop && stall[1] == `NoStop) || is_load_store) begin
@@ -90,7 +96,7 @@ module IF_ID(
 		end else if (stall[0] == `NoStop) begin
 			id_pc <= if_pc;
 			id_inst <= if_inst;
-		end	// Implied: (normally) stall[0] && stall[1]  -> nothing changes
+		end	// Implied: nothing changes
 	end
 
 endmodule

@@ -44,7 +44,6 @@ module ID_EX(
 	//从译码阶段传递的信息
 	input wire[`AluOpBus]       id_aluop,
 	input wire[`AluSelBus]      id_alusel,
-    input wire                  is_load_i, // Added
 	input wire[`RegBus]         id_reg1,
 	input wire[`RegBus]         id_reg2,
 	input wire[`RegAddrBus]     id_wd,
@@ -59,7 +58,6 @@ module ID_EX(
 	//传递到执行阶段的信息
 	output reg[`AluOpBus]       ex_aluop,
 	output reg[`AluSelBus]      ex_alusel,
-	output reg                  is_load_o, // Added
 	output reg[`RegBus]         ex_reg1,
 	output reg[`RegBus]         ex_reg2,
 	output reg[`RegAddrBus]     ex_wd,
@@ -73,8 +71,6 @@ module ID_EX(
 );
 
 	always @ (posedge clk) begin
-        is_load_o <= is_load_i;  // Should suffice, since alusel_o has been properly set
-	   
         if (rst == `RstEnable) begin
 			ex_aluop <= `EXE_NOP_OP;
 			ex_alusel <= `EXE_RES_NOP;
