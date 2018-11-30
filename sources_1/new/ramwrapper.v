@@ -8,6 +8,7 @@
 
 module RAMWrapper(
 	input wire clk,
+    input wire rst,
 	
 	// From MEM
     input wire ce_i,
@@ -16,6 +17,8 @@ module RAMWrapper(
     input wire[3:0] sel_i,
     input wire[`DataBus] data_i,
     
+    output wire LoadComplete,   //whether flash has completed initializing
+
     // To MEM
     output reg[`DataBus] data_o,
     
@@ -33,7 +36,17 @@ module RAMWrapper(
     input wire data_ready,
 
     output reg rdn,
-    output reg wrn
+    output reg wrn,
+
+    //For flash
+    output wire FlashByte,
+    output wire FlashVpen,
+    output wire FlashCE,
+    output wire FlashOE,
+    output wire FlashWE,
+    output wire FlashRP,
+    output wire[22:1] FlashAddr,
+    inout wire[15:0] FlashData 
 );
 
     // for Base Ram
@@ -41,6 +54,48 @@ module RAMWrapper(
     reg read_uart_prep;
     reg read_flag_prep;
     reg[7:0] flag_value;
+
+    // for flash
+    reg clk_2, clk_4, clk_8; //to get flash 11M clk
+    reg loadComplete;
+    wire[15:0] FlashDataOut;
+    reg[15:0] FlashHalfData;
+    reg[31:0] FlashWholeWord;
+    reg[22:1] FlashAddrIn;
+    reg FlashRead, FlashReset;
+    reg[18:0] i;
+    integer count = 0;
+    reg[15:0] kernelInstNum = 4'd4210;
+
+    assign LoadComplete = loadComplete;
+    always @(posedge clk) begin
+        clk_2 <= ~clk_2;
+    end
+
+    always @(posedge clk_2) begin
+        clk_4 <= ~clk_4;
+    end
+
+    always @(posedge clk_4) begin
+        clk_8 <= ~clk_8;
+    end
+
+
+    flash flashIO(
+        .rst(FlashReset),
+        .clk(clk_8),
+        .flash_ce(FlashCE),
+        .flash_we(FlashWE),
+        .flash_oe(FlashOE),
+        .flash_rp(FlashRP),
+        .flash_byte(FlashByte),
+        .flash_vpen(FlashVpen),
+        .addr(FlashAddrIn),
+        .data_out(FlashDataOut),
+        .flash_addr(FlashAddr),
+        .flash_data(FlashData),
+        .ctl_read(FlashRead)
+    );
 
     // Tri-state, write to either MEM or UART
     assign ram_data = (ce_i == `ChipEnable && we_i == `WriteEnable) ? 
@@ -57,8 +112,8 @@ module RAMWrapper(
     end
     
     // wrn control
-    always @ (*) begin
-        if (ce_i == `ChipDisable) begin
+    always @ (loadComplete) begin
+        if ((loadComplete == 1) || (ce_i == `ChipDisable)) begin
             wrn <= 1'b1;
         end else if (write_uart_prep) begin
             wrn <= clk;
@@ -68,8 +123,8 @@ module RAMWrapper(
     end
 
     // rdn control
-    always @ (*) begin
-        if (ce_i == `ChipDisable) begin
+    always @ (loadComplete) begin
+        if ((ce_i == `ChipDisable) || (loadComplete == 0)) begin
             rdn <= 1'b1;
         end else if (read_uart_prep) begin
             rdn <= clk;
@@ -148,4 +203,37 @@ module RAMWrapper(
         end
     end 
     
+    always@(posedge clk_8) begin
+        if(rst == `RstEnable) begin
+            FlashAddrIn <= 0;
+            loadComplete <= 0;
+            FlashReset <= 0;
+            i <= 19'd0;
+        end else begin
+            if(loadComplete == 1) begin
+                FlashReset <= 0;
+            end
+            else begin
+                if(i[18:3] == kernelInstNum) begin
+                    FlashReset <= 0;
+                    loadComplete <= 1;
+                    FlashAddrIn <= 0;
+                end else begin
+                    FlashReset <= 1;
+                    FlashAddrIn <= {6'b000000, i[18:3]};
+//                    if(posedge clk_8) begin
+                        if(i[2:0] == 3'b001) begin
+                            FlashRead <= ~FlashRead;
+                            count <= count + 1;
+                            if((count >= 2) && (count % 2 == 0)) begin
+                                FlashWholeWord <= {FlashHalfData, FlashDataOut};
+                            end
+                            FlashHalfData <= FlashDataOut;
+                        end
+                        i <= i + 1;
+//                    end 
+                end
+            end
+        end
+    end
 endmodule

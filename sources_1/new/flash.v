@@ -11,16 +11,18 @@ module flash(
     output wire flash_vpen,
 
     input wire[22:1] addr,
-    output wire[15:0] data_out,
+    output wire[15:0] data_out, //data got from flash
     output reg[22:1] flash_addr,
-    inout wire[15:0] flash_data
+    inout wire[15:0] flash_data,
+    input wire ctl_read
 );
 
-    // 搴旇鐢辩綉绔欏钩鍙板疄鐜?
+    // 应该由网站平台实现
     /*reg[15:0] data_flash[0:4194303];
     initial $readmemh ("flash.data", data_flash);
     assign flash_data = { data_flash[addr][7:0], data_flash[addr][15:8] };*/
     reg[15:0] final_data;
+    reg ctl_read_last;
 
     assign flash_rp = 1'b1;
     assign flash_ce = 1'b0;
@@ -37,15 +39,16 @@ module flash(
 			flash_we <= 1'b1;
 			cur_state <= 3'b000;
 			final_data <= 16'bz;
-            //ctl_read_last <= ctl_read;
+            ctl_read_last <= ctl_read;
         end
 		else begin
 			case(cur_state)
 				3'b000:begin
-                    flash_we <= 1'b0;
-                    cur_state <= 3'b001;
-                    //if (ctl_read /= ctl_read_last) then
-                    //ctl_read_last <= ctl_read;
+                    if(ctl_read != ctl_read_last) begin //waiting
+                        flash_we <= 1'b0;
+                        cur_state <= 3'b001;
+                        ctl_read_last <= ctl_read;
+                    end
 				end
 
                 3'b001:begin
@@ -67,7 +70,7 @@ module flash(
 
                 3'b100:begin
 					//data_out <= flash_data;
-					cur_state <= 3'b101;        // 鍗虫墽琛宒efault
+					cur_state <= 3'b101;        // 即执行default
                 end
 					
 				default begin
