@@ -1,5 +1,5 @@
-// Module RAMWrapper that adaptas a SRAM module as declared in thinpad_top.v 
-// to a RAM / ROM module.
+// Module BasicRamrapper that adaptas a SRAM module as declared in thinpad_top.v 
+// to a basic RAM / ROM module.
 // Author: LYL
 // Created on: 2018/11/24
 

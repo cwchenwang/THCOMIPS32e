@@ -1,4 +1,4 @@
-// Module RAMWrapper that adaptas a SRAM module as declared in thinpad_top.v 
+// Module RamUartWrapper that contorls data memory and UART. 
 // to a RAM / ROM module.
 // Author: LYL, ZDC
 // Created on: 2018/11/24
