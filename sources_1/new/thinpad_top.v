@@ -225,7 +225,7 @@ module thinpad_top #(parameter clk_opt = `USE_CLOCK_11M0592)(
     wire[5:0] interrupt = {5'b00000, timer_int};
 //    wire[5:0] interrupt = {5'b00000, timer_int, gpio_int, uart_int};
 
-    RAMWrapper rom_wrapper(
+    BasicRamWrapper rom_wrapper(
        .clk(clk),
        .addr_i(inst_addr),
        .ce_i(rom_ce),
@@ -242,7 +242,7 @@ module thinpad_top #(parameter clk_opt = `USE_CLOCK_11M0592)(
        .ram_we_n(ext_ram_we_n)
     );
 
-    RAMWrapper ram_wrapper(
+    RamUartWrapper ram_wrapper(
         .clk(clk),
         .addr_i(mem_addr_i),
         .ce_i(mem_ce_i),
