@@ -1,8 +1,7 @@
 `timescale 1ns / 1ps
 `include "defines.vh"
 
-//`define LOAD_PREAMBLE
-`define REVERSE_ENDIAN    // Enable this when using bin files from the book
+//`define REVERSE_ENDIAN   
 
 module tb;
     wire clk_50M, clk_11M0592;
@@ -43,23 +42,19 @@ module tb;
     wire flash_we_n;         //Flash写使能信号，低有效
     wire flash_byte_n;       //Flash 8bit模式选择，低有效。在使用flash的16位模式时请设为1
     
-    //Windows需要注意路径分隔符的转义，例如"D:\\foo\\bar.bin"
+    // Need to add the files in Verilog panel; The following paths can either be
+    // added filenames or absolute paths.
+    // Windows需要注意路径分隔符的转义，例如"D:\\foo\\bar.bin"
     localparam BASE_RAM_INIT_FILE = "/tmp/main.bin"; //BaseRAM初始化文件，请修改为实际的绝对路径
-    localparam EXT_RAM_INIT_FILE = "inst_rom_9_1b.bin";    //ExtRAM初始化文件，请修改为实际的绝对路径
+    localparam EXT_RAM_INIT_FILE = "kernel_el.bin";    //ExtRAM初始化文件，请修改为实际的绝对路径
     localparam FLASH_INIT_FILE = "/tmp/kernel.elf";    //Flash初始化文件，请修改为实际的绝对路径
     
     assign rxd = 1'b1; //idle state
     
     initial begin 
-    //    //在这里可以自定义测试输入序列，例如：
-    //    dip_sw = 32'h2;
-    //    touch_btn = 0;
-    //    for (integer i = 0; i < 20; i = i++) begin
-    //        #100; //等待100ns
-    //        clock_btn = 1; //按下手工时钟按钮
-    //        #100; //等待100ns
-    //        clock_btn = 0; //松开手工时钟按钮
-    //    end 
+        //在这里可以自定义测试输入序列
+        dip_sw = 32'h2;
+        touch_btn = 0;
         reset_btn = 1;
         #100 reset_btn = 0;
     end
@@ -162,7 +157,7 @@ module tb;
         reg [31:0] tmp_array[0:1048575];
         integer n_File_ID, n_Init_Size;
         n_File_ID = $fopen(BASE_RAM_INIT_FILE, "rb");
-        if(!n_File_ID)begin 
+        if (!n_File_ID) begin 
             n_Init_Size = 0;
             $display("Failed to open BaseRAM init file");
         end else begin
@@ -170,12 +165,14 @@ module tb;
             n_Init_Size /= 4;
             $fclose(n_File_ID);
         end
-        $display("BaseRAM Init Size(words): %d",n_Init_Size);
+        $display("BaseRAM Init Size(words): 0x%h", n_Init_Size);
         for (integer i = 0; i < n_Init_Size; i++) begin
 `ifdef REVERSE_ENDIAN
             tmp_array[i] = reverse_endian(tmp_array[i]);        
 `endif
-            base1.mem_array0[i] = tmp_array[i][24+:8];
+            if (i < 8)
+                $display("BaseRAM[%h]: %h", i, tmp_array[i]);
+            base1.mem_array0[i] = tmp_array[i][24+:8];  
             base1.mem_array1[i] = tmp_array[i][16+:8];
             base2.mem_array0[i] = tmp_array[i][8+:8];
             base2.mem_array1[i] = tmp_array[i][0+:8];
@@ -185,49 +182,27 @@ module tb;
     initial begin 
         reg [31:0] tmp_array[0:1048575];
         integer n_File_ID, n_Init_Size;
-`ifdef LOAD_PREAMBLE
-        integer preamble_len;
-`endif
         n_File_ID = $fopen(EXT_RAM_INIT_FILE, "rb");
-        if(!n_File_ID)begin 
+        if (!n_File_ID) begin 
             n_Init_Size = 0;
             $display("Failed to open ExtRAM init file");
         end else begin
-`ifdef LOAD_PREAMBLE
-            preamble_len = 11;
-            tmp_array[0] = 0;
-            tmp_array[1] = 'h3c01803f;  // lui $1, 0x803f
-            tmp_array[2] = 'hac2000ff;  // sw $0, 0xff($1) 
-            tmp_array[3] = 'h8c2000ff;  // lw $0, 0xff($1)
-            tmp_array[4] = 0;
-            tmp_array[5] = 0;
-            tmp_array[6] = 'h3c01807f;  // lui $1, 0x807f
-            tmp_array[7] = 'hac2000ff;  // sw $0, 0xff($1)
-            tmp_array[8] = 'h8c2000ff;  // lw $0, 0xff($1)
-            tmp_array[9] = 0;
-            tmp_array[10] = 0;
-            n_Init_Size = $fread(tmp_array, n_File_ID, preamble_len) / 4 + preamble_len;
-            $display("With preamble");
-`else
             n_Init_Size = $fread(tmp_array, n_File_ID) / 4;
-            $display("Without preamble");
-`endif
             $fclose(n_File_ID);
         end
-        
-        $display("ExtRAM Init Size(words): %d",n_Init_Size);
+        // fread is word-based and treats binary file as big-endian (because of reg[31:0]).
+        // So for little-endian binary file, tmp_array[i][24+:8] is the lowest byte.
+        $display("ExtRAM Init Size(words): 0x%h", n_Init_Size);
         for (integer i = 0; i < n_Init_Size; i++) begin
 `ifdef REVERSE_ENDIAN
             tmp_array[i] = reverse_endian(tmp_array[i]);        
 `endif
-            ext1.mem_array0[i] = tmp_array[i][24+:8];
+            if (i < 8) 
+                $display("ExtRAM[%h]: %h", i, tmp_array[i]);
+            ext1.mem_array0[i] = tmp_array[i][24+:8];  
             ext1.mem_array1[i] = tmp_array[i][16+:8];
             ext2.mem_array0[i] = tmp_array[i][8+:8];
             ext2.mem_array1[i] = tmp_array[i][0+:8];
-        end
-        
-        for (integer i = 0; i != (n_Init_Size < 16 ? n_Init_Size : 16); ++i) begin
-            $display ("ROM[%h]: %h", i, tmp_array[i]);    
         end
     end
     
