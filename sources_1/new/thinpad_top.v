@@ -82,6 +82,9 @@ module thinpad_top #(clk_opt = `USE_CLOCK_11M0592)(
     output wire video_de           //行数据有效信号，用于区分消隐区
 );
 
+    localparam RUN = 0, LOAD_FLASH = 1;
+    reg[1:0] state = LOAD_FLASH;
+
     /* =========== Demo code begin =========== */
     
     //// PLL分频示例
@@ -183,26 +186,21 @@ module thinpad_top #(clk_opt = `USE_CLOCK_11M0592)(
     
     /* =========== Demo code end =========== */
     
-    wire rst = reset_btn;
-//    wire clk = clock_btn;
-    
     reg clk_25M = 0;
     always @(posedge clk_50M)
         clk_25M = !clk_25M;   
-//    reg clk_5M5296 = 0;
-//    always @(posedge clk_11M0592)
-//        clk_5M5296 = !clk_5M5296;
     reg clk;
     always @(*) begin
         case (clk_opt)
         `USE_CLOCK_50M:     clk <= clk_50M;
         `USE_CLOCK_25M:     clk <= clk_25M;
         `USE_CLOCK_11M0592: clk <= clk_11M0592;
-//        `USE_CLOCK_5M5296:  clk <= clk_5M5296;
         `USE_CLOCK_BTN:     clk <= clock_btn;
         default:            clk <= clk_11M0592;
         endcase    
     end
+    wire flash_clk = clk_11M0592;
+    wire flash_btn = clock_btn;
     
     // Instruction memory
     wire[`InstAddrBus] inst_addr;
@@ -225,13 +223,24 @@ module thinpad_top #(clk_opt = `USE_CLOCK_11M0592)(
     wire[5:0] interrupt = {5'b00000, timer_int};
 //    wire[5:0] interrupt = {5'b00000, timer_int, gpio_int, uart_int};
 
+    // Flash
+    // Extended states when state == LOAD_FLASH.
+    reg[31:0] flash_data_buf = 0;
+    reg[22:1] flash_ctrl_addr = 0;
+    // Signals
+    reg load_flash_complete = 0;    // This affects CPU reset!!
+    reg loaded_flash = 0;
+    // Output
+    wire[15:0] flash_ctrl_data;
+    wire flash_ctrl_data_ready;
+
     BasicRamWrapper rom_wrapper(
        .clk(clk),
-       .addr_i(inst_addr),
-       .ce_i(rom_ce),
-       .we_i(rom_we),
-       .data_i(rom_wr_data),
-       .sel_i(rom_sel),    
+       .addr_i((state == RUN) ? inst_addr : {9'b0, flash_ctrl_addr, 1'b0} - 4),
+       .ce_i((state == RUN) ? rom_ce : (state == LOAD_FLASH)),
+       .we_i((state == RUN) ? rom_we : (state == LOAD_FLASH) ? (loaded_flash && !flash_ctrl_addr[1]) : 1'b0),
+       .data_i((state == RUN) ? rom_wr_data : reverse_endian(flash_data_buf)),
+       .sel_i(state == RUN ? rom_sel : 4'b1111),    
        .data_o(inst),
        
        .ram_data(ext_ram_data),
@@ -267,7 +276,7 @@ module thinpad_top #(clk_opt = `USE_CLOCK_11M0592)(
     
     THCOMIPS32e cpu(
         .clk(clk),
-        .rst(rst),
+        .rst(reset_btn || load_flash_complete),
         
         .rom_addr_o(inst_addr),
         .rom_ce_o(rom_ce),
@@ -287,14 +296,72 @@ module thinpad_top #(clk_opt = `USE_CLOCK_11M0592)(
         .timer_int_o(timer_int)			
     );
     
-    SEG7_LUT hi_seg(dpy1, cpu.regfile.regs[17][7:4]),
-            lo_seg(dpy0, cpu.regfile.regs[17][3:0]);
+    Flash flash_ctrl(
+        .rst(reset_btn),
+        .clk(flash_clk),
+        
+        .addr(flash_ctrl_addr),
+        .data_out(flash_ctrl_data), 
+        .data_ready(flash_ctrl_data_ready),
+        
+        .flash_ce(flash_ce_n),
+        .flash_we(flash_we_n),
+        .flash_oe(flash_oe_n),
+        .flash_rp(flash_rp_n),
+        .flash_byte(flash_byte_n),
+        .flash_vpen(flash_vpen),
+        .flash_addr(flash_a[22:1]),
+        .flash_data(flash_d)
+    );
+    assign flash_a[0] = 0;
     
-//    assign leds = {uart_dataready, uart_tbre, uart_tsre, cpu.pc_value[12:0]}; 
-    assign leds = {
-        uart_dataready, uart_tbre, uart_tsre,
-        ram_wrapper.read_flag_prep, ram_wrapper.read_uart_prep, ram_wrapper.write_uart_prep,
-        cpu.pc_value[9:0]
-    };
+    SEG7_LUT lo_seg(dpy0, {2'b0, state});
+    assign leds = flash_ctrl_addr[1+:16];
+    
+    always @(posedge clk) begin
+        case (state)
+        RUN: begin 
+            // reset_btn is directly connected to CPU
+            load_flash_complete <= 0;   // Disable writing MEM
+            if (!reset_btn && flash_btn) begin
+                state <= LOAD_FLASH;
+                flash_ctrl_addr <= 0;
+                flash_data_buf <= 0;
+                loaded_flash <= 0;
+            end
+        end
+        LOAD_FLASH: begin
+            if (reset_btn) begin
+                // Reload flash
+                flash_ctrl_addr <= 0;
+                flash_data_buf <= 0;
+                load_flash_complete <= 0;
+                loaded_flash <= 0;
+            end else if (flash_ctrl_addr[22]) begin  // 2M half words, 4M memory
+                // Load flash done; in this cycle, the last word shall be written to instruction memory.
+                state <= RUN;        
+                load_flash_complete <= 1;
+                flash_data_buf <= 0;    // Just for debug
+            end else if (flash_ctrl_data_ready) begin
+                if (!loaded_flash) begin
+                    flash_ctrl_addr <= flash_ctrl_addr + 1;                    
+                    flash_data_buf <= {flash_data_buf[15:0], flash_ctrl_data};  // Shift left and append
+                    loaded_flash <= 1;     // Avoid multiple reads in one flash_clk cycle
+                end
+            end else begin
+                loaded_flash <= 0;            
+            end
+        end
+        default: begin
+            state <= RUN;
+        end         
+        endcase
+    end
+    
+    function automatic [31:0] reverse_endian(input [31:0] x);
+    begin
+        reverse_endian = {x[7:0], x[15:8], x[23:16], x[31:24]};
+    end
+    endfunction
 
 endmodule

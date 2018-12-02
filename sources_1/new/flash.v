@@ -1,26 +1,27 @@
-//`include "defines.v"
+`timescale 1ns / 1ps
 
-module flash(
+module Flash(
     input wire rst,
     input wire clk,
+    
+    input wire[22:1] addr,
+    output wire[15:0] data_out, //data got from flash
+    output wire data_ready,
+    
     output wire flash_ce,
     output reg flash_we,
     output reg flash_oe,
     output wire flash_rp,
     output wire flash_byte,
     output wire flash_vpen,
-
-    input wire[22:1] addr,
-    output wire[15:0] data_out, //data got from flash
     output reg[22:1] flash_addr,
-    inout wire[15:0] flash_data,
-    input wire ctl_read
+    inout wire[15:0] flash_data
 );
 
-    // 应该由网站平台实现
-    /*reg[15:0] data_flash[0:4194303];
-    initial $readmemh ("flash.data", data_flash);
-    assign flash_data = { data_flash[addr][7:0], data_flash[addr][15:8] };*/
+//    // 应该由网站平台实现
+//    reg[15:0] data_flash[0:4194303];
+//    initial $readmemh ("flash.data", data_flash);
+//    assign flash_data = { data_flash[addr][7:0], data_flash[addr][15:8] };
     reg[15:0] final_data;
     reg ctl_read_last;
 
@@ -32,6 +33,7 @@ module flash(
     assign data_out = {final_data[7:0], final_data[15:8]};
 
     reg[2:0] cur_state = 3'b000;
+    assign data_ready = cur_state == 3'b100;
 
     always @(posedge clk or posedge rst) begin
 		if (rst) begin
@@ -39,16 +41,12 @@ module flash(
 			flash_we <= 1'b1;
 			cur_state <= 3'b000;
 			final_data <= 16'bz;
-            ctl_read_last <= ctl_read;
         end
 		else begin
 			case(cur_state)
 				3'b000:begin
-                    if(ctl_read != ctl_read_last) begin //waiting
-                        flash_we <= 1'b0;
-                        cur_state <= 3'b001;
-                        ctl_read_last <= ctl_read;
-                    end
+                    flash_we <= 1'b0;
+                    cur_state <= 3'b001;
 				end
 
                 3'b001:begin
@@ -69,7 +67,6 @@ module flash(
                 end
 
                 3'b100:begin
-					//data_out <= flash_data;
 					cur_state <= 3'b101;        // 即执行default
                 end
 					
@@ -79,11 +76,8 @@ module flash(
 					final_data <= 16'bz;
 					cur_state <= 3'b000;
                 end
-
 			endcase
-
 		end
-
 	end
 
 endmodule
