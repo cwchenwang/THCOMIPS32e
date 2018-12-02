@@ -34,7 +34,7 @@
 `include "defines.vh"
 
 module Ctrl(
-    input wire             clk, // For controlling FSM
+    input wire             clk,     // For controlling FSM
 	input wire				reset_btn,
 	input wire             flash_btn,
 
@@ -74,19 +74,28 @@ module Ctrl(
 );
 
     localparam RUN = 0, LOAD_FLASH = 1;
-    reg[1:0] state = LOAD_FLASH;
+    reg state = LOAD_FLASH;
     
     reg[31:0] flash_data_buf = 0;
     reg load_flash_complete = 0;    // This affects CPU reset!!
     reg loaded_flash = 0;
     
+    reg raw_rom_ce;
+    reg raw_rom_we;
+    reg[`DataAddrBus] raw_rom_addr;
+    reg[`DataBus] raw_rom_data;
+    reg[3:0] raw_rom_sel;
+    
     initial begin
         flash_addr <= 0;    
     end
+    
+    // Restart upon completing loading flash
+    assign rst = reset_btn || load_flash_complete;  
 
     // Combinational part about stall, flush, new_pc.
     // This part is not affected by state.
-	always @ (*) begin
+	always @(*) begin
 		if (reset_btn == `RstEnable) begin
 			stall <= 5'b00000;
 			flush <= 1'b0;
@@ -135,51 +144,61 @@ module Ctrl(
 	end      //always
 	
 	// Combinational part about ROM
+	// NOTE: this part is time critical!! If the variable "state" is of width 2 
+	// and we put the following part to the next always block, we shall find errors
+	// when executing "A" command (the highest byte is wrong)
+    // Use most of RAM's controlling signals to ROM.
     always @(*) begin
-       if (reset_btn == `RstEnable) begin
-           rom_ce <= 0;
-           rom_we <= 0;
-           rom_addr <= 0;
-           rom_data <= 0;
-           rom_sel <= 0;
-       end else begin
-            case (state)
-            RUN: begin
-                rom_data <= ram_data;
-                if (load_store_rom) begin
-                    rom_ce <= !ram_ce;  // Enable RAM, disable ROM; vice versa.
-                    rom_we <= ram_we;   // Should suffice, since I did not change it. 
-                    rom_addr <= ram_addr;
-                    rom_sel <= ram_sel;                           
-                end else begin
-                    rom_ce <= 1;
-                    rom_we <= 0;
-                    rom_addr <= pc;
-                    rom_sel <= 4'b1111;
-                end
+        if (rst == `RstEnable) begin
+           raw_rom_ce <= 0;
+           raw_rom_we <= 0;
+           raw_rom_addr <= 0;
+           raw_rom_data <= 0;
+           raw_rom_sel <= 0;
+        end else begin
+            raw_rom_data <= ram_data;
+            if (load_store_rom) begin
+                raw_rom_ce <= !ram_ce;  // Enable RAM, disable ROM; vice versa.
+                raw_rom_we <= ram_we;   // Should suffice, since I did not change it. 
+                raw_rom_addr <= ram_addr;
+                raw_rom_sel <= ram_sel;                           
+            end else begin
+                raw_rom_ce <= 1;
+                raw_rom_we <= 0;
+                raw_rom_addr <= pc;
+                raw_rom_sel <= 4'b1111;
             end
-            LOAD_FLASH: begin
-               rom_addr <= {9'b0, flash_addr, 1'b0} - 4;
-               rom_ce <= 1;
-               rom_we <= loaded_flash && !flash_addr[1];
-               rom_data <= reverse_endian(flash_data_buf);
-               rom_sel <= 4'b1111;  
-            end    
-            default: begin
-                rom_ce <= 0;
-                rom_we <= 0;
-                rom_addr <= 0;
-                rom_data <= 0;
-                rom_sel <= 0;
-            end    
-            endcase
         end
     end
     
-    // Restart upon completing loading flash
-    assign rst = reset_btn || load_flash_complete;  
+    // Final resolution of ROM signals
+    always @(*) begin
+        case (state)
+        RUN: begin
+            rom_addr <= raw_rom_addr;
+            rom_ce <= raw_rom_ce;
+            rom_we <= raw_rom_we;
+            rom_data <= raw_rom_data;
+            rom_sel <= raw_rom_sel;
+        end
+        LOAD_FLASH: begin
+           rom_addr <= {9'b0, flash_addr, 1'b0} - 4;
+           rom_ce <= 1;
+           rom_we <= loaded_flash && !flash_addr[1];
+           rom_data <= reverse_endian(flash_data_buf);
+           rom_sel <= 4'b1111;  
+        end    
+        default: begin
+            rom_ce <= 0;
+            rom_we <= 0;
+            rom_addr <= 0;
+            rom_data <= 0;
+            rom_sel <= 0;
+        end    
+        endcase
+    end
 	
-	// Sequential part which maintains the FSM
+	// Sequential part which updates the FSM
     always @(posedge clk) begin
         case (state)
         RUN: begin 

@@ -625,6 +625,7 @@ module THCOMIPS32e(
         
         .stallreq_from_id(stallreq_from_id),
         .stallreq_from_ex(stallreq_from_ex),
+        
         .rst(rst),
         .new_pc(new_pc),
         .flush(flush),
