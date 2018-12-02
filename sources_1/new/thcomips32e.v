@@ -35,19 +35,21 @@
 
 module THCOMIPS32e(
 	input wire					clk,
-	input wire					rst,
+	input wire					reset_btn,
+	input wire                 flash_btn,
 	
 	input wire[5:0]				int_i,
+    output wire                timer_int_o,
   
     // Instruction memory
-	output reg[`RegBus]        rom_addr_o,
-    output reg                 rom_ce_o,
-	output reg                 rom_we_o,
-	output reg[`RegBus]        rom_data_o,
-	output reg[3:0]            rom_sel_o,                 
+	output wire[`RegBus]       rom_addr_o,
+    output wire                rom_ce_o,
+	output wire                rom_we_o,
+	output wire[`RegBus]       rom_data_o,
+	output wire[3:0]           rom_sel_o,                 
 	input wire[`RegBus]        rom_data_i,
 	
-	//连接数据存储器data_ram
+	// Data memory
 	input wire[`RegBus]			ram_data_i,
 	output wire[`RegBus]       ram_addr_o,
 	output wire[`RegBus]       ram_data_o,
@@ -55,7 +57,10 @@ module THCOMIPS32e(
 	output wire[3:0]           ram_sel_o,
 	output wire                ram_ce_o,
 	
-	output wire                timer_int_o
+	// Flash
+    output wire[22:1]           flash_addr,
+    input wire[15:0]            flash_data,    // Data got from flash
+    input wire                  flash_data_ready
 );
     // PC output
 	wire[`InstAddrBus] pc_value;
@@ -196,6 +201,7 @@ module THCOMIPS32e(
 	wire stallreq_from_id;	
 	wire stallreq_from_ex;
 	wire load_store_rom;
+	wire rst;  // Global reset
 
 	wire LLbit_o;
 
@@ -610,18 +616,42 @@ module THCOMIPS32e(
 	);
 	
 	Ctrl ctrl(
-        .rst(rst),
+        .clk(clk),
+        .reset_btn(reset_btn),
+        .flash_btn(flash_btn),
         
         .excepttype_i(mem_excepttype_o),
         .cp0_epc_i(latest_epc),
         
         .stallreq_from_id(stallreq_from_id),
-        
-        //来自执行阶段的暂停请求
         .stallreq_from_ex(stallreq_from_ex),
+        .rst(rst),
         .new_pc(new_pc),
         .flush(flush),
-        .stall(stall)
+        .stall(stall),
+        
+        // Flash
+        .flash_addr(flash_addr),
+        .flash_data(flash_data),     // Data got from flash
+        .flash_data_ready(flash_data_ready),
+        
+        // From PC
+        .pc(pc_value),
+        .load_store_rom(pc_load_store_rom_o),
+        
+        // From MEM
+        .ram_ce(ram_ce_o),
+        .ram_we(ram_we_o),
+        .ram_addr(ram_addr_o),
+        .ram_sel(ram_sel_o),
+        .ram_data(ram_data_o),
+        
+        // To BasicRamWrapper
+        .rom_ce(rom_ce_o),
+        .rom_we(rom_we_o),
+        .rom_addr(rom_addr_o),
+        .rom_sel(rom_sel_o),
+        .rom_data(rom_data_o)
 	);
 
 	div div(
@@ -676,29 +706,5 @@ module THCOMIPS32e(
 		
 		.timer_int_o(timer_int_o)  			
 	);
-	
-	// Use most of RAM's controlling signals to ROM.
-	always @(*) begin
-	   if (rst == `RstEnable) begin
-	       rom_ce_o <= 0;
-	       rom_we_o <= 0;
-	       rom_addr_o <= 0;
-	       rom_data_o <= 0;
-	       rom_sel_o <= 0;
-	   end else begin
-            rom_data_o <= ram_data_o;
-            if (pc_load_store_rom_o) begin
-                rom_ce_o <= !ram_ce_o;  // Enable RAM, disable ROM; vice versa.
-                rom_we_o <= ram_we_o;   // Should suffice, since I did not change it. 
-                rom_addr_o <= ram_addr_o;
-                rom_sel_o <= ram_sel_o;                           
-            end else begin
-                rom_ce_o <= 1;
-                rom_we_o <= 0;
-                rom_addr_o <= pc_value;
-                rom_sel_o <= 4'b1111;
-            end
-        end
-	end
 	
 endmodule
