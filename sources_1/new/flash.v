@@ -33,8 +33,9 @@ module Flash #(reverse = 1)(
     assign data_out = reverse ? {final_data[7:0], final_data[15:8]} : final_data;
 
     reg[2:0] cur_state = 3'b000;
-    assign data_ready = cur_state == 3'b100;
+    assign data_ready = cur_state == 3'b110;
 
+    reg[2:0] count = 0;
     always @(posedge clk or posedge rst) begin
 		if (rst) begin
 			flash_oe <= 1'b1;
@@ -44,6 +45,14 @@ module Flash #(reverse = 1)(
         end
 		else begin
 			case(cur_state)
+			    3'b110: begin
+			      count = count + 1;
+			      if(count == 3) begin
+			         count = 0;
+			         cur_state <= 3'b000;
+			      end
+			    end
+			    
 				3'b000:begin
                     flash_we <= 1'b0;
                     cur_state <= 3'b001;
@@ -74,7 +83,7 @@ module Flash #(reverse = 1)(
 					flash_oe <= 1'b1;
 					flash_we <= 1'b1;
 					final_data <= 16'bz;
-					cur_state <= 3'b000;
+					cur_state <= 3'b110;
                 end
 			endcase
 		end

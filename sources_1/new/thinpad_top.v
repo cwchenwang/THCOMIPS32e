@@ -2,7 +2,7 @@
 `timescale 1ns / 1ps
 `include "defines.vh"
 
-module thinpad_top #(clk_opt = `USE_CLOCK_12M5)(
+module thinpad_top #(clk_opt = `USE_CLOCK_25M)(
     input wire clk_50M,           //50MHz 时钟输入
     input wire clk_11M0592,       //11.0592MHz 时钟输入
 
@@ -232,6 +232,8 @@ module thinpad_top #(clk_opt = `USE_CLOCK_12M5)(
     wire[5:0] interrupt = {5'b00000, timer_int};
 //    wire[5:0] interrupt = {5'b00000, timer_int, gpio_int, uart_int};
 
+//   wire ram_clk;
+//    assign ram_clk = (cpu.ctrl.state) ? clk_12M5 : clk_25M;
     BasicRamWrapper rom_wrapper(
        .clk(clk),
        .addr_i(rom_addr),
