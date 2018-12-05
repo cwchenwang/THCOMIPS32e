@@ -139,7 +139,7 @@ module Ctrl(
                 new_pc <= `PC_OVERFLOW_ADDR;
             end
             32'h0000000e: begin   //eret
-                new_pc <= `PC_ERET_ADDR;
+                new_pc <= cp0_epc_i;
             end
             default: begin
                 new_pc <= `PC_INSTINVALID_ADDR; // Not used

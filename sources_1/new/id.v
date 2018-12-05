@@ -696,7 +696,7 @@ module ID(
 		  		alusel_o <= `EXE_RES_NOP;   reg1_read_o <= 1'b0;	reg2_read_o <= 1'b0;
 		  		instvalid <= `InstValid; excepttype_is_eret<= `True_v;				
 			end else if(inst_i[31:21] == 11'b01000000000 && 
-						inst_i[10:0] == 11'b00000000000) begin
+						inst_i[10:3] == 8'b0) begin
 				aluop_o <= `EXE_MFC0_OP;
 				alusel_o <= `EXE_RES_MOVE;
 				wd_o <= inst_i[20:16];
@@ -705,7 +705,7 @@ module ID(
 				reg1_read_o <= 1'b0;
 				reg2_read_o <= 1'b0;		
 			end else if(inst_i[31:21] == 11'b01000000100 && 
-						inst_i[10:0] == 11'b00000000000) begin
+						inst_i[10:3] == 8'b0) begin
 				aluop_o <= `EXE_MTC0_OP;
 				alusel_o <= `EXE_RES_NOP;
 				wreg_o <= `WriteDisable;

@@ -305,7 +305,7 @@
 `define PC_INSTINVALID_ADDR 32'h80001180
 `define PC_TRAP_ADDR 32'h80001180
 `define PC_OVERFLOW_ADDR 32'h80001180
-`define PC_ERET_ADDR 32'h80001180
+//`define PC_ERET_ADDR 32'h80001180
 
 // Main clock frequency of thinpad_top
 `define USE_CLOCK_50M 0
