@@ -1,10 +1,10 @@
 `timescale 1ns / 1ps
 // author by zdc
-/* 最终综合的vga模板，用一个状态机实现了总共三种状态的切换：计数器，推箱子，图片显示器。
-   切换状态方法为按住四个touch_btn最左边两个时按下clock_btn，切换状态依次为计数器，推箱子，图片显示器
-   除了图片显示器外，剩余两个状态有重置方式，具体操作为：按住touch_btn最右边两个之后按下clock_btn（使用这种方法的原因是直接使用reset_btn莫名不行）
-   计数器操作为按下clock计数器加一；推箱子操作为按住touch_btn之后按下clock_btn，四个touch_btn左往右依次为上下左右方向；图片显示器画质存在一定问题
-   具体在上层例化时，由于显示图片涉及访问BaseRAM且由0地址开始访问，故例化时需要一个访存模块，单独测试时写了一个叫ram_port的模块来实现这个功能，同时，上层还需要维护一个自动机以及控制串口使能，测试时的具体实现如下：
+/* �?终综合的vga模板，用�?个状态机实现了�?�共三种状�?�的切换：计数器，推箱子，图片显示器�?
+   切换状�?�方法为按住四个touch_btn�?左边两个时按下clock_btn，切换状态依次为计数器，推箱子，图片显示�?
+   除了图片显示器外，剩余两个状态有重置方式，具体操作为：按住touch_btn�?右边两个之后按下clock_btn（使用这种方法的原因是直接使用reset_btn莫名不行�?
+   计数器操作为按下clock计数器加�?；推箱子操作为按住touch_btn之后按下clock_btn，四个touch_btn左往右依次为上下左右方向；图片显示器画质存在�?定问�?
+   具体在上层例化时，由于显示图片涉及访问BaseRAM且由0地址�?始访问，故例化时�?要一个访存模块，单独测试时写了一个叫ram_port的模块来实现这个功能，同时，上层还需要维护一个自动机以及控制串口使能，测试时的具体实现如下：
 
     reg [2:0] state;               //001-counter, 010-game, 100-image
     
@@ -26,8 +26,8 @@
         end
     end
 
-    wire [11:0] hdata;      // 行
-    wire [11:0] vdata;      // 列
+    wire [11:0] hdata;      // �?
+    wire [11:0] vdata;      // �?
     assign video_clk = clk_50M;
     
     assign uart_wrn = 1'b1;
@@ -41,8 +41,8 @@
     
     final_vga #(12, 800, 856, 976, 1040, 600, 637, 643, 666, 1, 1) final_vga0 (
         .clk(clk_50M), 
-        .hdata(hdata), //横坐标
-        .vdata(vdata),      //纵坐标
+        .hdata(hdata), //横坐�?
+        .vdata(vdata),      //纵坐�?
         .hsync(video_hsync),
         .vsync(video_vsync),
         .data_enable(video_de),
@@ -93,9 +93,9 @@ module final_vga
     output wire vsync,
     output wire data_enable,
     
-    output wire[3:0] red,
-    output wire[3:0] green,
-    output wire[2:0] blue,
+    output wire[2:0] red,
+    output wire[2:0] green,
+    output wire[1:0] blue,
 
     input wire rst_btn,
     input wire clk_btn,

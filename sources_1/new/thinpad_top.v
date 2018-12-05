@@ -2,7 +2,7 @@
 `timescale 1ns / 1ps
 `include "defines.vh"
 
-module thinpad_top #(clk_opt = `USE_CLOCK_25M)(
+module thinpad_top #(clk_opt = `USE_CLOCK_12M5)(
     input wire clk_50M,           //50MHz  ±÷” ‰»Î
     input wire clk_11M0592,       //11.0592MHz  ±÷” ‰»Î
 
@@ -220,7 +220,8 @@ module thinpad_top #(clk_opt = `USE_CLOCK_25M)(
     wire[`RegBus] mem_data_i;
     wire[`RegBus] mem_data_o;
     wire[3:0] mem_sel_i; 
-    wire mem_ce_i;  
+    wire mem_ce_i;
+    wire mem_clk;  
     
     // Flash 
     wire[22:1] flash_ctrl_addr;
@@ -231,6 +232,12 @@ module thinpad_top #(clk_opt = `USE_CLOCK_25M)(
     wire timer_int;
     wire[5:0] interrupt = {5'b00000, timer_int};
 //    wire[5:0] interrupt = {5'b00000, timer_int, gpio_int, uart_int};
+
+    // VGA
+    wire[11:0] vga_hdata;      // Ë°?
+    wire[11:0] vga_vdata;      // Âà
+    wire[`DataBus] vga_data;
+    wire[2:0] vga_state;
 
 //   wire ram_clk;
 //    assign ram_clk = (cpu.ctrl.state) ? clk_12M5 : clk_25M;
@@ -252,7 +259,7 @@ module thinpad_top #(clk_opt = `USE_CLOCK_25M)(
     );
 
     RamUartWrapper ram_wrapper(
-        .clk(clk),
+        .clk(mem_clk),
         .addr_i(mem_addr_i),
         .ce_i(mem_ce_i),
         .we_i(mem_we_i),
@@ -276,8 +283,10 @@ module thinpad_top #(clk_opt = `USE_CLOCK_25M)(
     
     THCOMIPS32e cpu(
         .clk(clk),
+        .clk_50M(clk_50M),
         .reset_btn(reset_btn),
         .flash_btn(clock_btn),
+        .touch_btn(touch_btn),
         
         .rom_addr_o(rom_addr),
         .rom_ce_o(rom_ce),
@@ -292,10 +301,16 @@ module thinpad_top #(clk_opt = `USE_CLOCK_25M)(
         .ram_data_o(mem_data_i),
         .ram_data_i(mem_data_o),
         .ram_ce_o(mem_ce_i),
+        .ram_clk_o(mem_clk),
         
         .flash_addr(flash_ctrl_addr),
         .flash_data(flash_ctrl_data),    
         .flash_data_ready(flash_ctrl_data_ready),
+        
+        .vga_hdata_i(vga_hdata),      
+        .vga_vdata_i(vga_vdata),      
+        .vga_data_o(vga_data),
+        .vga_state_o(vga_state),
         
         .int_i(interrupt),
         .timer_int_o(timer_int)			
@@ -320,7 +335,25 @@ module thinpad_top #(clk_opt = `USE_CLOCK_25M)(
     );
     assign flash_a[0] = 0;
     
-    SEG7_LUT lo_seg(dpy0, {3'b0, cpu.ctrl.state});
+    assign video_clk = clk_50M;
+    final_vga #(12, 800, 856, 976, 1040, 600, 637, 643, 666, 1, 1) final_vga0 (
+        .clk(clk_50M), 
+        .hdata(vga_hdata), //Ê®™ÂùêÊ†?
+        .vdata(vga_vdata),      //Á∫µÂùêÊ†?
+        .hsync(video_hsync),
+        .vsync(video_vsync),
+        .data_enable(video_de),
+        .red(video_red),
+        .green(video_green),
+        .blue(video_blue),
+        .clk_btn(clock_btn),
+        .rst_btn(reset_btn),
+        .direction(touch_btn),
+        .ram_data(vga_data),
+        .state(vga_state)
+    );
+    
+    SEG7_LUT lo_seg(dpy0, {1'b0, cpu.ctrl.state});
 //    assign leds = flash_ctrl_addr[1+:16];
     assign leds = cpu.pc_value[15:0];
 

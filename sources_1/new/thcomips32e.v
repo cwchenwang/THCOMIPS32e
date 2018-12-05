@@ -35,8 +35,10 @@
 
 module THCOMIPS32e(
 	input wire					clk,
+	input wire                 clk_50M,
 	input wire					reset_btn,
 	input wire                 flash_btn,
+	input wire[3:0]            touch_btn,
 	
 	input wire[5:0]				int_i,
     output wire                timer_int_o,
@@ -56,11 +58,18 @@ module THCOMIPS32e(
 	output wire                ram_we_o,
 	output wire[3:0]           ram_sel_o,
 	output wire                ram_ce_o,
+    output wire                 ram_clk_o,
 	
 	// Flash
     output wire[22:1]           flash_addr,
     input wire[15:0]            flash_data,    // Data got from flash
-    input wire                  flash_data_ready
+    input wire                  flash_data_ready,
+    
+    // VGA
+    input wire[11:0]            vga_hdata_i,      
+    input wire[11:0]            vga_vdata_i,      
+    output wire[`DataBus]       vga_data_o,
+    output wire[2:0]            vga_state_o
 );
     // PC output
 	wire[`InstAddrBus] pc_value;
@@ -146,7 +155,12 @@ module THCOMIPS32e(
 	wire[`RegBus] mem_cp0_reg_data_o;	
 	wire[31:0] mem_excepttype_o;
 	wire mem_is_in_delayslot_o;
-	wire[`RegBus] mem_current_inst_address_o;			
+	wire[`RegBus] mem_current_inst_address_o;	
+    wire[`DataAddrBus] mem_addr_o;
+    wire mem_we_o;
+    wire[3:0] mem_sel_o;
+    wire[`DataBus] mem_data_o;
+    wire mem_ce_o;		
 	
 	//连接MEM/WB模块的输出与回写阶段的输入	
 	wire wb_wreg_i;
@@ -550,11 +564,11 @@ module THCOMIPS32e(
         .whilo_o(mem_whilo_o),
         
         //送到memory的信息
-        .mem_addr_o(ram_addr_o),
-        .mem_we_o(ram_we_o),
-        .mem_sel_o(ram_sel_o),
-        .mem_data_o(ram_data_o),
-        .mem_ce_o(ram_ce_o),
+        .mem_addr_o(mem_addr_o),
+        .mem_we_o(mem_we_o),
+        .mem_sel_o(mem_sel_o),
+        .mem_data_o(mem_data_o),
+        .mem_ce_o(mem_ce_o),
         
         .excepttype_o(mem_excepttype_o),
         .cp0_epc_o(latest_epc),
@@ -617,8 +631,10 @@ module THCOMIPS32e(
 	
 	Ctrl ctrl(
         .clk(clk),
+        .clk_50M(clk_50M),
         .reset_btn(reset_btn),
         .flash_btn(flash_btn),
+        .touch_btn(touch_btn),
         
         .excepttype_i(mem_excepttype_o),
         .cp0_epc_i(latest_epc),
@@ -641,18 +657,32 @@ module THCOMIPS32e(
         .load_store_rom(pc_load_store_rom_o),
         
         // From MEM
-        .ram_ce(ram_ce_o),
-        .ram_we(ram_we_o),
-        .ram_addr(ram_addr_o),
-        .ram_sel(ram_sel_o),
-        .ram_data(ram_data_o),
+        .ram_ce(mem_ce_o),
+        .ram_we(mem_we_o),
+        .ram_addr(mem_addr_o),
+        .ram_sel(mem_sel_o),
+        .ram_data(mem_data_o),
+        
+        .ram_data_i(ram_data_i),  // For VGA
+        .ram_ce_o(ram_ce_o),
+        .ram_we_o(ram_we_o),
+        .ram_addr_o(ram_addr_o),
+        .ram_sel_o(ram_sel_o),
+        .ram_data_o(ram_data_o),
+        .ram_clk_o(ram_clk_o),
         
         // To BasicRamWrapper
         .rom_ce(rom_ce_o),
         .rom_we(rom_we_o),
         .rom_addr(rom_addr_o),
         .rom_sel(rom_sel_o),
-        .rom_data(rom_data_o)
+        .rom_data(rom_data_o),
+        
+        // VGA
+        .vga_hdata_i(vga_hdata_i),      // 琛?
+        .vga_vdata_i(vga_vdata_i),      // 鍒
+        .vga_data_o(vga_data_o),
+        .vga_state_o(vga_state_o)
 	);
 
 	div div(
