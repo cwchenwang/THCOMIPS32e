@@ -2,7 +2,7 @@
 `timescale 1ns / 1ps
 `include "defines.vh"
 
-module thinpad_top #(clk_opt = `USE_CLOCK_11M0592)(
+module thinpad_top #(clk_opt = `USE_CLOCK_12M5)(
     input wire clk_50M,           //50MHz 时钟输入
     input wire clk_11M0592,       //11.0592MHz 时钟输入
 
@@ -185,15 +185,22 @@ module thinpad_top #(clk_opt = `USE_CLOCK_11M0592)(
     
     reg clk_25M = 0;
     always @(posedge clk_50M)
-        clk_25M = !clk_25M;   
+        clk_25M = !clk_25M;  
+    reg clk_12M5 = 0;
+    reg clk_12M5_count = 0;
+    always @(posedge clk_50M) begin
+        if (clk_12M5_count)
+            clk_12M5 <= !clk_12M5;
+        clk_12M5_count <= !clk_12M5_count;
+    end
     reg clk;
     always @(*) begin
         case (clk_opt)
         `USE_CLOCK_50M:     clk <= clk_50M;
         `USE_CLOCK_25M:     clk <= clk_25M;
-        `USE_CLOCK_11M0592: clk <= clk_11M0592;
+        `USE_CLOCK_12M5:    clk <= clk_12M5;
         `USE_CLOCK_BTN:     clk <= clock_btn;
-        default:            clk <= clk_11M0592;
+        default:            clk <= clk_12M5;
         endcase    
     end
     wire flash_clk = clk_11M0592;

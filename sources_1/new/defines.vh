@@ -310,5 +310,5 @@
 // Main clock frequency of thinpad_top
 `define USE_CLOCK_50M 0
 `define USE_CLOCK_25M 1
-`define USE_CLOCK_11M0592 2
+`define USE_CLOCK_12M5 2
 `define USE_CLOCK_BTN 3

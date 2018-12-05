@@ -56,7 +56,7 @@ module tb;
         dip_sw = 32'h2;
         touch_btn = 0;
         reset_btn = 1;
-        #100 reset_btn = 0;
+        #125 reset_btn = 0;
     end
     
     always @(posedge clk_50M)

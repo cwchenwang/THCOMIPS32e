@@ -74,7 +74,7 @@ module Ctrl(
 );
 
     localparam RUN = 0, LOAD_FLASH = 1;
-    reg state = LOAD_FLASH;
+    reg state = RUN;
     
     reg[31:0] flash_data_buf = 0;
     reg load_flash_complete = 0;    // This affects CPU reset!!
