@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module Flash(
+module Flash #(reverse = 1)(
     input wire rst,
     input wire clk,
     
@@ -23,14 +23,14 @@ module Flash(
 //    initial $readmemh ("flash.data", data_flash);
 //    assign flash_data = { data_flash[addr][7:0], data_flash[addr][15:8] };
     reg[15:0] final_data;
-    reg ctl_read_last;
+//    reg ctl_read_last;
 
     assign flash_rp = 1'b1;
     assign flash_ce = 1'b0;
     assign flash_vpen = 1'b1;
     assign flash_byte = 1'b1;
     assign flash_data = final_data;
-    assign data_out = {final_data[7:0], final_data[15:8]};
+    assign data_out = reverse ? {final_data[7:0], final_data[15:8]} : final_data;
 
     reg[2:0] cur_state = 3'b000;
     assign data_ready = cur_state == 3'b100;

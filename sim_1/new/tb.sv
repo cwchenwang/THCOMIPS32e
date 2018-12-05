@@ -56,11 +56,11 @@ module tb;
         dip_sw = 32'h2;
         touch_btn = 0;
         reset_btn = 1;
-        #125 reset_btn = 0;
+        #100 reset_btn = 0;
     end
     
-    always @(posedge clk_50M)
-        clock_btn = !clock_btn; // 25M
+//    always @(posedge clk_50M)
+//        clock_btn = !clock_btn; // 25M
     
     thinpad_top dut(
         .clk_50M(clk_50M),

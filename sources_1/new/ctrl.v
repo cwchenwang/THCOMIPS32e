@@ -150,11 +150,12 @@ module Ctrl(
     // Use most of RAM's controlling signals to ROM.
     always @(*) begin
         if (rst == `RstEnable) begin
-           raw_rom_ce <= 0;
-           raw_rom_we <= 0;
-           raw_rom_addr <= 0;
-           raw_rom_data <= 0;
-           raw_rom_sel <= 0;
+            // Load the first instruction
+            raw_rom_ce <= 1;
+            raw_rom_we <= 0;
+            raw_rom_addr <= `PC_INIT_ADDR;
+            raw_rom_data <= 0;
+            raw_rom_sel <= 4'b1111;
         end else begin
             raw_rom_data <= ram_data;
             if (load_store_rom) begin
@@ -185,7 +186,7 @@ module Ctrl(
            rom_addr <= {9'b0, flash_addr, 1'b0} - 4;
            rom_ce <= 1;
            rom_we <= loaded_flash && !flash_addr[1];
-           rom_data <= reverse_endian(flash_data_buf);
+           rom_data <= flash_data_buf;
            rom_sel <= 4'b1111;  
         end    
         default: begin
@@ -226,7 +227,7 @@ module Ctrl(
             end else if (flash_data_ready) begin
                 if (!loaded_flash) begin
                     flash_addr <= flash_addr + 1;                    
-                    flash_data_buf <= {flash_data_buf[15:0], flash_data};  // Shift left and append
+                    flash_data_buf <= {flash_data, flash_data_buf[31:16]};  // Shift right and prepend
                     loaded_flash <= 1;     // Avoid multiple reads in one flash_clk cycle
                 end
             end else begin
@@ -238,11 +239,5 @@ module Ctrl(
         end         
         endcase
     end
-    
-    function automatic [31:0] reverse_endian(input [31:0] x);
-    begin
-        reverse_endian = {x[7:0], x[15:8], x[23:16], x[31:24]};
-    end
-    endfunction
 
 endmodule

@@ -166,20 +166,20 @@ module thinpad_top #(clk_opt = `USE_CLOCK_12M5)(
 //            .TxD_data(ext_uart_tx)        //待发送的数据
 //        );
     
-    //图像输出演示，分辨率800x600@75Hz，像素时钟为50MHz
-    wire [11:0] hdata;
-    assign video_red = hdata < 266 ? 3'b111 : 0; //红色竖条
-    assign video_green = hdata < 532 && hdata >= 266 ? 3'b111 : 0; //绿色竖条
-    assign video_blue = hdata >= 532 ? 2'b11 : 0; //蓝色竖条
-    assign video_clk = clk_50M;
-    vga #(12, 800, 856, 976, 1040, 600, 637, 643, 666, 1, 1) vga800x600at75 (
-        .clk(clk_50M), 
-        .hdata(hdata), //横坐标
-        .vdata(),      //纵坐标
-        .hsync(video_hsync),
-        .vsync(video_vsync),
-        .data_enable(video_de)
-    );
+//    //图像输出演示，分辨率800x600@75Hz，像素时钟为50MHz
+//    wire [11:0] hdata;
+//    assign video_red = hdata < 266 ? 3'b111 : 0; //红色竖条
+//    assign video_green = hdata < 532 && hdata >= 266 ? 3'b111 : 0; //绿色竖条
+//    assign video_blue = hdata >= 532 ? 2'b11 : 0; //蓝色竖条
+//    assign video_clk = clk_50M;
+//    vga #(12, 800, 856, 976, 1040, 600, 637, 643, 666, 1, 1) vga800x600at75 (
+//        .clk(clk_50M), 
+//        .hdata(hdata), //横坐标
+//        .vdata(),      //纵坐标
+//        .hsync(video_hsync),
+//        .vsync(video_vsync),
+//        .data_enable(video_de)
+//    );
     
     /* =========== Demo code end =========== */
     
@@ -203,7 +203,7 @@ module thinpad_top #(clk_opt = `USE_CLOCK_12M5)(
         default:            clk <= clk_12M5;
         endcase    
     end
-    wire flash_clk = clk_11M0592;
+    wire flash_clk = clk_12M5;  // clk_11M0592 is problematic
     wire flash_btn = clock_btn;
     
     // Instruction memory
@@ -299,7 +299,7 @@ module thinpad_top #(clk_opt = `USE_CLOCK_12M5)(
         .timer_int_o(timer_int)			
     );
     
-    Flash flash_ctrl(
+    Flash #(.reverse(0)) flash_ctrl(
         .rst(reset_btn),
         .clk(flash_clk),
         
@@ -318,7 +318,8 @@ module thinpad_top #(clk_opt = `USE_CLOCK_12M5)(
     );
     assign flash_a[0] = 0;
     
-    SEG7_LUT lo_seg(dpy0, {2'b0, cpu.ctrl.state});
-    assign leds = flash_ctrl_addr[1+:16];
+    SEG7_LUT lo_seg(dpy0, {3'b0, cpu.ctrl.state});
+//    assign leds = flash_ctrl_addr[1+:16];
+    assign leds = cpu.pc_value[15:0];
 
 endmodule
