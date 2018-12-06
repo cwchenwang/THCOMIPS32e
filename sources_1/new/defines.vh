@@ -291,10 +291,8 @@
 `define ROM_OP_STORE 2'b01
 `define ROM_OP_INST 2'b10  // incl, 2'b11s
 
-// Values of EX::ld_src_o, MEM::ld_src_i, MEM::ld_src_o, MEM_WB::ld_src
-// Only meaningful when the instruction is of load type.
-`define LOAD_STORE_FROM_RAM 1'b0
-`define LOAD_STORE_FROM_ROM 1'b1
+`define LOAD_STORE_RAM_OR_UART 1'b1
+`define LOAD_STORE_ROM 1'b0
 
 // Reserved addresses for UART
 `define UART_DATA_ADDR 32'hBFD003F8
@@ -307,10 +305,10 @@
 `define PC_INSTINVALID_ADDR 32'h80001180
 `define PC_TRAP_ADDR 32'h80001180
 `define PC_OVERFLOW_ADDR 32'h80001180
-`define PC_ERET_ADDR 32'h80001180
+//`define PC_ERET_ADDR 32'h80001180
 
 // Main clock frequency of thinpad_top
 `define USE_CLOCK_50M 0
 `define USE_CLOCK_25M 1
-`define USE_CLOCK_11M0592 2
+`define USE_CLOCK_12M5 2
 `define USE_CLOCK_BTN 3

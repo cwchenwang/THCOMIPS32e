@@ -2,9 +2,7 @@
 `timescale 1ns / 1ps
 `include "defines.vh"
 
-module thinpad_top 
-    #(parameter clk_opt = `USE_CLOCK_11M0592) 
-(
+module thinpad_top(
     input wire clk_50M,           //50MHz 时钟输入
     input wire clk_11M0592,       //11.0592MHz 时钟输入
 
@@ -84,21 +82,20 @@ module thinpad_top
     output wire video_de           //行数据有效信号，用于区分消隐区
 );
 
-    /* =========== Demo code begin =========== */
-    
     //// PLL分频示例
-    //wire locked, clk_10M, clk_20M;
-    //pll_example clock_gen 
-    // (
-    //  // Clock out ports
-    //  .clk_out1(clk_10M), // 时钟输出1，频率在IP配置界面中设置
-    //  .clk_out2(clk_20M), // 时钟输出2，频率在IP配置界面中设置
-    //  // Status and control signals
-    //  .reset(reset_btn), // PLL复位输入
-    //  .locked(locked), // 锁定输出，"1"表示时钟稳定，可作为后级电路复位
-    // // Clock in ports
-    //  .clk_in1(clk_50M) // 外部时钟输入
-    // );
+    wire locked; //, clk_10M, clk_20M;
+    wire clk_22M5, clk_25M;
+    clk_wiz_1 clock_gen 
+    (
+      // Clock out ports
+      .clk_out1(clk_22M5), // 时钟输出1，频率在IP配置界面中设置
+      .clk_out2(clk_25M), // 时钟输出2，频率在IP配置界面中设置
+      // Status and control signals
+      .reset(/*reset_btn*/ 0), // PLL复位输入
+      .locked(locked), // 锁定输出，"1"表示时钟稳定，可作为后级电路复位
+     // Clock in ports
+      .clk_in1(clk_50M) // 外部时钟输入
+     );
     
     //reg reset_of_clk10M;
     //// 异步复位，同步释放
@@ -126,88 +123,25 @@ module thinpad_top
     // f=dpy0[6] // e     c
     // g=dpy0[7] // |     |
     //           // ---d---  p
-     
-//    //直连串口接收发送演示，从直连串口收到的数据再发送出去
-//    wire [7:0] ext_uart_rx;
-//    reg  [7:0] ext_uart_buffer, ext_uart_tx;
-//    wire ext_uart_ready, ext_uart_busy;
-//    reg ext_uart_start, ext_uart_avai;
     
-//    async_receiver #(.ClkFrequency(50000000),.Baud(9600)) //接收模块，9600无检验位
-//        ext_uart_r(
-//            .clk(clk_50M),                       //外部时钟信号
-//            .RxD(rxd),                           //外部串行信号输入
-//            .RxD_data_ready(ext_uart_ready),  //数据接收到标志
-//            .RxD_clear(ext_uart_ready),       //清除接收标志
-//            .RxD_data(ext_uart_rx)             //接收到的一字节数据
-//        );
-        
-//    always @(posedge clk_50M) begin //接收到缓冲区ext_uart_buffer
-//        if(ext_uart_ready)begin
-//            ext_uart_buffer <= ext_uart_rx;
-//            ext_uart_avai <= 1;
-//        end else if(!ext_uart_busy && ext_uart_avai)begin 
-//            ext_uart_avai <= 0;
-//        end
-//    end
-//    always @(posedge clk_50M) begin //将缓冲区ext_uart_buffer发送出去
-//        if(!ext_uart_busy && ext_uart_avai)begin 
-//            ext_uart_tx <= ext_uart_buffer;
-//            ext_uart_start <= 1;
-//        end else begin 
-//            ext_uart_start <= 0;
-//        end
-//    end
-    
-//    async_transmitter #(.ClkFrequency(50000000),.Baud(9600)) //发送模块，9600无检验位
-//        ext_uart_t(
-//            .clk(clk_50M),                  //外部时钟信号
-//            .TxD(txd),                      //串行信号输出
-//            .TxD_busy(ext_uart_busy),       //发送器忙状态指示
-//            .TxD_start(ext_uart_start),    //开始发送信号
-//            .TxD_data(ext_uart_tx)        //待发送的数据
-//        );
-    
-    //图像输出演示，分辨率800x600@75Hz，像素时钟为50MHz
-    wire [11:0] hdata;
-    assign video_red = hdata < 266 ? 3'b111 : 0; //红色竖条
-    assign video_green = hdata < 532 && hdata >= 266 ? 3'b111 : 0; //绿色竖条
-    assign video_blue = hdata >= 532 ? 2'b11 : 0; //蓝色竖条
-    assign video_clk = clk_50M;
-    vga #(12, 800, 856, 976, 1040, 600, 637, 643, 666, 1, 1) vga800x600at75 (
-        .clk(clk_50M), 
-        .hdata(hdata), //横坐标
-        .vdata(),      //纵坐标
-        .hsync(video_hsync),
-        .vsync(video_vsync),
-        .data_enable(video_de)
-    );
-    
-    /* =========== Demo code end =========== */
-    
-    wire rst = reset_btn;
-//    wire clk = clock_btn;
-    
-    reg clk_25M = 0;
-    always @(posedge clk_50M)
-        clk_25M = !clk_25M;    
-    reg clk;
-    always @(*) begin
-        case (clk_opt)
-        `USE_CLOCK_50M:     clk <= clk_50M;
-        `USE_CLOCK_25M:     clk <= clk_25M;
-        `USE_CLOCK_11M0592: clk <= clk_11M0592;
-        `USE_CLOCK_BTN:     clk <= clock_btn;
-        default:            clk <= clock_btn;
-        endcase    
+    reg clk_12M5 = 0;
+    reg clk_12M5_count = 0;
+    always @(posedge clk_50M) begin
+        if (clk_12M5_count)
+            clk_12M5 <= !clk_12M5;
+        clk_12M5_count <= !clk_12M5_count;
     end
+
+    wire clk = clk_22M5;
+    wire flash_clk = clk_12M5;  // clk_11M0592 is problematic
+    wire flash_btn = clock_btn;
     
     // Instruction memory
-    wire[`InstAddrBus] inst_addr;
+    wire[`InstAddrBus] rom_addr;
     wire rom_ce;
     wire rom_we;
     wire[`InstBus] rom_wr_data;
-    wire[`InstBus] inst;
+    wire[`InstBus] rom_rd_data;
     wire[3:0] rom_sel;
     
     // Data memory
@@ -216,21 +150,33 @@ module thinpad_top
     wire[`RegBus] mem_data_i;
     wire[`RegBus] mem_data_o;
     wire[3:0] mem_sel_i; 
-    wire mem_ce_i;  
+    wire mem_ce_i;
+    wire mem_clk;  
+    
+    // Flash 
+    wire[22:1] flash_ctrl_addr;
+    wire[15:0] flash_ctrl_data;
+    wire flash_ctrl_data_ready;
     
     // Interrupt 
     wire timer_int;
     wire[5:0] interrupt = {5'b00000, timer_int};
 //    wire[5:0] interrupt = {5'b00000, timer_int, gpio_int, uart_int};
 
-    RAMWrapper rom_wrapper(
+    // VGA
+    wire[11:0] vga_hdata;     
+    wire[11:0] vga_vdata;      
+    wire[`DataBus] vga_data;
+    wire[2:0] vga_state;
+
+    BasicRamWrapper rom_wrapper(
        .clk(clk),
-       .addr_i(inst_addr),
+       .addr_i(rom_addr),
        .ce_i(rom_ce),
        .we_i(rom_we),
        .data_i(rom_wr_data),
        .sel_i(rom_sel),    
-       .data_o(inst),
+       .data_o(rom_rd_data),
        
        .ram_data(ext_ram_data),
        .ram_addr(ext_ram_addr),
@@ -240,8 +186,8 @@ module thinpad_top
        .ram_we_n(ext_ram_we_n)
     );
 
-    RAMWrapper ram_wrapper(
-        .clk(clk),
+    RamUartWrapper ram_wrapper(
+        .clk(mem_clk),
         .addr_i(mem_addr_i),
         .ce_i(mem_ce_i),
         .we_i(mem_we_i),
@@ -265,14 +211,17 @@ module thinpad_top
     
     THCOMIPS32e cpu(
         .clk(clk),
-        .rst(rst),
+        .clk_50M(clk_50M),
+        .reset_btn(reset_btn),
+        .flash_btn(clock_btn),
+        .touch_btn(touch_btn),
         
-        .rom_addr_o(inst_addr),
+        .rom_addr_o(rom_addr),
         .rom_ce_o(rom_ce),
         .rom_we_o(rom_we),
         .rom_data_o(rom_wr_data),
         .rom_sel_o(rom_sel),
-        .rom_data_i(inst),
+        .rom_data_i(rom_rd_data),
         
         .ram_we_o(mem_we_i),
         .ram_addr_o(mem_addr_i),
@@ -280,19 +229,59 @@ module thinpad_top
         .ram_data_o(mem_data_i),
         .ram_data_i(mem_data_o),
         .ram_ce_o(mem_ce_i),
+        .ram_clk_o(mem_clk),
+        
+        .flash_addr(flash_ctrl_addr),
+        .flash_data(flash_ctrl_data),    
+        .flash_data_ready(flash_ctrl_data_ready),
+        
+        .vga_hdata_i(vga_hdata),      
+        .vga_vdata_i(vga_vdata),      
+        .vga_data_o(vga_data),
+        .vga_state_o(vga_state),
         
         .int_i(interrupt),
         .timer_int_o(timer_int)			
     );
     
-    SEG7_LUT hi_seg(dpy1, cpu.pc[7:4]),
-            lo_seg(dpy0, cpu.pc[3:0]);
+    Flash #(.reverse(0)) flash_ctrl(
+        .rst(reset_btn),
+        .clk(flash_clk),
+        
+        .addr(flash_ctrl_addr),
+        .data_out(flash_ctrl_data), 
+        .data_ready(flash_ctrl_data_ready),
+        
+        .flash_ce(flash_ce_n),
+        .flash_we(flash_we_n),
+        .flash_oe(flash_oe_n),
+        .flash_rp(flash_rp_n),
+        .flash_byte(flash_byte_n),
+        .flash_vpen(flash_vpen),
+        .flash_addr(flash_a[22:1]),
+        .flash_data(flash_d)
+    );
+    assign flash_a[0] = 0;
     
-//    assign leds = {uart_dataready, uart_tbre, uart_tsre, cpu.pc[12:0]}; 
-    assign leds = {
-        uart_dataready, uart_tbre, uart_tsre,
-        ram_wrapper.read_flag_prep, ram_wrapper.read_uart_prep, ram_wrapper.write_uart_prep,
-        cpu.pc[9:0]
-    };
+    assign video_clk = clk_50M;
+    final_vga #(12, 800, 856, 976, 1040, 600, 637, 643, 666, 1, 1) final_vga0 (
+        .clk(clk_50M), 
+        .hdata(vga_hdata), 
+        .vdata(vga_vdata), 
+        .hsync(video_hsync),
+        .vsync(video_vsync),
+        .data_enable(video_de),
+        .red(video_red),
+        .green(video_green),
+        .blue(video_blue),
+        .clk_btn(clock_btn),
+        .rst_btn(reset_btn),
+        .direction(touch_btn),
+        .ram_data(vga_data),
+        .state(vga_state)
+    );
+    
+    SEG7_LUT lo_seg(dpy0, {1'b0, cpu.ctrl.state});
+    assign leds = cpu.pc_value[15:0];
 
 endmodule

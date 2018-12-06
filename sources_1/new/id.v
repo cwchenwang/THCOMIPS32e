@@ -1,35 +1,3 @@
-//////////////////////////////////////////////////////////////////////
-////                                                              ////
-//// Copyright (C) 2014 leishangwen@163.com                       ////
-////                                                              ////
-//// This source file may be used and distributed without         ////
-//// restriction provided that this copyright statement is not    ////
-//// removed from the file and that any derivative work contains  ////
-//// the original copyright notice and the associated disclaimer. ////
-////                                                              ////
-//// This source file is free software; you can redistribute it   ////
-//// and/or modify it under the terms of the GNU Lesser General   ////
-//// Public License as published by the Free Software Foundation; ////
-//// either version 2.1 of the License, or (at your option) any   ////
-//// later version.                                               ////
-////                                                              ////
-//// This source is distributed in the hope that it will be       ////
-//// useful, but WITHOUT ANY WARRANTY; without even the implied   ////
-//// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ////
-//// PURPOSE.  See the GNU Lesser General Public License for more ////
-//// details.                                                     ////
-////                                                              ////
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
-// Module:  id
-// File:    id.v
-// Author:  Lei Silei
-// E-mail:  leishangwen@163.com
-// Description: ÒëÂë½×¶Î
-// Revision: 1.0
-//////////////////////////////////////////////////////////////////////
-
 `timescale 1ns / 1ps
 `include "defines.vh"
 
@@ -66,7 +34,6 @@ module ID(
 	//ËÍµ½Ö´ÐÐ½×¶ÎµÄÐÅÏ¢
 	output reg[`AluOpBus]		aluop_o,
 	output reg[`AluSelBus]		alusel_o,
-    output reg					is_load_o,  // Meaningful iff aluse_o == `EXE_RES_LOAD_STORE
 	output reg[`RegBus]			reg1_o,
 	output reg[`RegBus]			reg2_o,
 	output reg[`RegAddrBus]		wd_o,
@@ -96,7 +63,7 @@ module ID(
 
 	reg stallreq_for_reg1_loadrelate;
 	reg stallreq_for_reg2_loadrelate;
-	wire pre_inst_is_load;	// TODO: this can be somewhat replaced by is_load_o
+	wire pre_inst_is_load;	
 	reg excepttype_is_syscall;
 	reg excepttype_is_eret;
   
@@ -128,7 +95,6 @@ module ID(
 		if (rst == `RstEnable) begin
 			aluop_o <= `EXE_NOP_OP;
 			alusel_o <= `EXE_RES_NOP;
-			is_load_o <= 0;
 			wd_o <= `NOPRegAddr;
 			wreg_o <= `WriteDisable;
 			instvalid <= `InstValid;
@@ -147,7 +113,6 @@ module ID(
 		end else begin
 			aluop_o <= `EXE_NOP_OP;
 			alusel_o <= `EXE_RES_NOP;
-			is_load_o <= 0;
 			wd_o <= inst_i[15:11];
 			wreg_o <= `WriteDisable;
 			instvalid <= `InstInvalid;	   
@@ -479,49 +444,41 @@ module ID(
 		  		wreg_o <= `WriteEnable;		aluop_o <= `EXE_LB_OP;
 		  		alusel_o <= `EXE_RES_LOAD_STORE; reg1_read_o <= 1'b1;	reg2_read_o <= 1'b0;	  	
 				wd_o <= inst_i[20:16]; instvalid <= `InstValid;	
-				is_load_o <= 1;
 			end
 			`EXE_LBU: begin
 		  		wreg_o <= `WriteEnable;		aluop_o <= `EXE_LBU_OP;
 		  		alusel_o <= `EXE_RES_LOAD_STORE; reg1_read_o <= 1'b1;	reg2_read_o <= 1'b0;	  	
 				wd_o <= inst_i[20:16]; instvalid <= `InstValid;	
-				is_load_o <= 1;
 			end
 			`EXE_LH: begin
 		  		wreg_o <= `WriteEnable;		aluop_o <= `EXE_LH_OP;
 		  		alusel_o <= `EXE_RES_LOAD_STORE; reg1_read_o <= 1'b1;	reg2_read_o <= 1'b0;	  	
 				wd_o <= inst_i[20:16]; instvalid <= `InstValid;	
-				is_load_o <= 1;
 			end
 			`EXE_LHU: begin
 		  		wreg_o <= `WriteEnable;		aluop_o <= `EXE_LHU_OP;
 		  		alusel_o <= `EXE_RES_LOAD_STORE; reg1_read_o <= 1'b1;	reg2_read_o <= 1'b0;	  	
 				wd_o <= inst_i[20:16]; instvalid <= `InstValid;	
-				is_load_o <= 1;
 			end
 			`EXE_LW: begin
 		  		wreg_o <= `WriteEnable;		aluop_o <= `EXE_LW_OP;
 		  		alusel_o <= `EXE_RES_LOAD_STORE; reg1_read_o <= 1'b1;	reg2_read_o <= 1'b0;	  	
 				wd_o <= inst_i[20:16]; instvalid <= `InstValid;	
-				is_load_o <= 1;
 			end
 			`EXE_LL: begin
 		  		wreg_o <= `WriteEnable;		aluop_o <= `EXE_LL_OP;
 		  		alusel_o <= `EXE_RES_LOAD_STORE; reg1_read_o <= 1'b1;	reg2_read_o <= 1'b0;	  	
 				wd_o <= inst_i[20:16]; instvalid <= `InstValid;	
-				is_load_o <= 1;
 			end
 			`EXE_LWL: begin
 		  		wreg_o <= `WriteEnable;		aluop_o <= `EXE_LWL_OP;
 		  		alusel_o <= `EXE_RES_LOAD_STORE; reg1_read_o <= 1'b1;	reg2_read_o <= 1'b1;	  	
 				wd_o <= inst_i[20:16]; instvalid <= `InstValid;	
-				is_load_o <= 1;
 			end
 			`EXE_LWR: begin
 		  		wreg_o <= `WriteEnable;		aluop_o <= `EXE_LWR_OP;
 		  		alusel_o <= `EXE_RES_LOAD_STORE; reg1_read_o <= 1'b1;	reg2_read_o <= 1'b1;	  	
 				wd_o <= inst_i[20:16]; instvalid <= `InstValid;	
-				is_load_o <= 1;
 			end			
 			`EXE_SB: begin
 		  		wreg_o <= `WriteDisable;		aluop_o <= `EXE_SB_OP;
@@ -707,7 +664,7 @@ module ID(
 		  		alusel_o <= `EXE_RES_NOP;   reg1_read_o <= 1'b0;	reg2_read_o <= 1'b0;
 		  		instvalid <= `InstValid; excepttype_is_eret<= `True_v;				
 			end else if(inst_i[31:21] == 11'b01000000000 && 
-						inst_i[10:0] == 11'b00000000000) begin
+						inst_i[10:3] == 8'b0) begin
 				aluop_o <= `EXE_MFC0_OP;
 				alusel_o <= `EXE_RES_MOVE;
 				wd_o <= inst_i[20:16];
@@ -716,7 +673,7 @@ module ID(
 				reg1_read_o <= 1'b0;
 				reg2_read_o <= 1'b0;		
 			end else if(inst_i[31:21] == 11'b01000000100 && 
-						inst_i[10:0] == 11'b00000000000) begin
+						inst_i[10:3] == 8'b0) begin
 				aluop_o <= `EXE_MTC0_OP;
 				alusel_o <= `EXE_RES_NOP;
 				wreg_o <= `WriteDisable;

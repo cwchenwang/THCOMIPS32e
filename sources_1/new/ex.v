@@ -1,35 +1,3 @@
-//////////////////////////////////////////////////////////////////////
-////                                                              ////
-//// Copyright (C) 2014 leishangwen@163.com                       ////
-////                                                              ////
-//// This source file may be used and distributed without         ////
-//// restriction provided that this copyright statement is not    ////
-//// removed from the file and that any derivative work contains  ////
-//// the original copyright notice and the associated disclaimer. ////
-////                                                              ////
-//// This source file is free software; you can redistribute it   ////
-//// and/or modify it under the terms of the GNU Lesser General   ////
-//// Public License as published by the Free Software Foundation; ////
-//// either version 2.1 of the License, or (at your option) any   ////
-//// later version.                                               ////
-////                                                              ////
-//// This source is distributed in the hope that it will be       ////
-//// useful, but WITHOUT ANY WARRANTY; without even the implied   ////
-//// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ////
-//// PURPOSE.  See the GNU Lesser General Public License for more ////
-//// details.                                                     ////
-////                                                              ////
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
-// Module:  ex
-// File:    ex.v
-// Author:  Lei Silei
-// E-mail:  leishangwen@163.com
-// Description: 执行阶段
-// Revision: 1.0
-//////////////////////////////////////////////////////////////////////
-
 `timescale 1ns / 1ps
 `include "defines.vh"
 
@@ -39,7 +7,6 @@ module EX(
 	//送到执行阶段的信息
 	input wire[`AluOpBus]       aluop_i,
 	input wire[`AluSelBus]      alusel_i,
-    input wire					 is_load_i,	// Meaningful iff alusel_i == `EXE_RES_LOAD_STORE
 	input wire[`RegBus]         reg1_i,
 	input wire[`RegBus]         reg2_i,
 	input wire[`RegAddrBus]     wd_i,
@@ -118,11 +85,7 @@ module EX(
 	output wire[`RegBus]		current_inst_address_o,	
 
     output reg                  stallreq, 
-//    output reg                  struct_conflict_o,
-    
-    // For structural conflict
-    output reg                  mem_src_o,   // To EX_MEM  
-    output reg[1:0]             rom_op_o    // To PC
+    output reg                  load_store_rom_o
 );
 
 	reg[`RegBus] logicout;
@@ -161,19 +124,10 @@ module EX(
 	assign is_in_delayslot_o = is_in_delayslot_i;
 	assign current_inst_address_o = current_inst_address_i;
 	
-	// Tackle structural conflict
+	// Stall requests
 	// TODO: modify this after removing madd, msub, div,...
 	always @(*) begin
-		mem_src_o <= mem_addr_o[22] ? `LOAD_STORE_FROM_RAM : `LOAD_STORE_FROM_ROM;   // 2 ^ 22 = 4M	
-		if (!mem_addr_o[22] && alusel_i == `EXE_RES_LOAD_STORE) begin	// Access ROM
-			rom_op_o <= is_load_i ? `ROM_OP_LOAD : `ROM_OP_STORE;
-//			stallreq <= 1;   // Stall IF_ID, ID, EX (while PC tries to load / store ROM)
-//            struct_conflict_o <= 1;
-		end else begin
-			rom_op_o <= `ROM_OP_INST;
-//			stallreq <= stallreq_for_madd_msub || stallreq_for_div;      // Same as original
-//            struct_conflict_o <= 0;
-        end
+        load_store_rom_o <= !mem_addr_o[22] && alusel_i == `EXE_RES_LOAD_STORE;        
         stallreq <= stallreq_for_madd_msub || stallreq_for_div;      // Same as original
 	end
 
@@ -259,29 +213,29 @@ module EX(
 			end		
 			`EXE_CLZ_OP: begin
 				arithmeticres <= reg1_i[31] ? 0 : reg1_i[30] ? 1 : reg1_i[29] ? 2 :
-													reg1_i[28] ? 3 : reg1_i[27] ? 4 : reg1_i[26] ? 5 :
-													reg1_i[25] ? 6 : reg1_i[24] ? 7 : reg1_i[23] ? 8 : 
-													reg1_i[22] ? 9 : reg1_i[21] ? 10 : reg1_i[20] ? 11 :
-													reg1_i[19] ? 12 : reg1_i[18] ? 13 : reg1_i[17] ? 14 : 
-													reg1_i[16] ? 15 : reg1_i[15] ? 16 : reg1_i[14] ? 17 : 
-													reg1_i[13] ? 18 : reg1_i[12] ? 19 : reg1_i[11] ? 20 :
-													reg1_i[10] ? 21 : reg1_i[9] ? 22 : reg1_i[8] ? 23 : 
-													reg1_i[7] ? 24 : reg1_i[6] ? 25 : reg1_i[5] ? 26 : 
-													reg1_i[4] ? 27 : reg1_i[3] ? 28 : reg1_i[2] ? 29 : 
-													reg1_i[1] ? 30 : reg1_i[0] ? 31 : 32 ;
+                                reg1_i[28] ? 3 : reg1_i[27] ? 4 : reg1_i[26] ? 5 :
+                                reg1_i[25] ? 6 : reg1_i[24] ? 7 : reg1_i[23] ? 8 : 
+                                reg1_i[22] ? 9 : reg1_i[21] ? 10 : reg1_i[20] ? 11 :
+                                reg1_i[19] ? 12 : reg1_i[18] ? 13 : reg1_i[17] ? 14 : 
+                                reg1_i[16] ? 15 : reg1_i[15] ? 16 : reg1_i[14] ? 17 : 
+                                reg1_i[13] ? 18 : reg1_i[12] ? 19 : reg1_i[11] ? 20 :
+                                reg1_i[10] ? 21 : reg1_i[9] ? 22 : reg1_i[8] ? 23 : 
+                                reg1_i[7] ? 24 : reg1_i[6] ? 25 : reg1_i[5] ? 26 : 
+                                reg1_i[4] ? 27 : reg1_i[3] ? 28 : reg1_i[2] ? 29 : 
+                                reg1_i[1] ? 30 : reg1_i[0] ? 31 : 32 ;
 			end
 			`EXE_CLO_OP: begin
 				arithmeticres <= (reg1_i_not[31] ? 0 : reg1_i_not[30] ? 1 : reg1_i_not[29] ? 2 :
-													reg1_i_not[28] ? 3 : reg1_i_not[27] ? 4 : reg1_i_not[26] ? 5 :
-													reg1_i_not[25] ? 6 : reg1_i_not[24] ? 7 : reg1_i_not[23] ? 8 : 
-													reg1_i_not[22] ? 9 : reg1_i_not[21] ? 10 : reg1_i_not[20] ? 11 :
-													reg1_i_not[19] ? 12 : reg1_i_not[18] ? 13 : reg1_i_not[17] ? 14 : 
-													reg1_i_not[16] ? 15 : reg1_i_not[15] ? 16 : reg1_i_not[14] ? 17 : 
-													reg1_i_not[13] ? 18 : reg1_i_not[12] ? 19 : reg1_i_not[11] ? 20 :
-													reg1_i_not[10] ? 21 : reg1_i_not[9] ? 22 : reg1_i_not[8] ? 23 : 
-													reg1_i_not[7] ? 24 : reg1_i_not[6] ? 25 : reg1_i_not[5] ? 26 : 
-													reg1_i_not[4] ? 27 : reg1_i_not[3] ? 28 : reg1_i_not[2] ? 29 : 
-													reg1_i_not[1] ? 30 : reg1_i_not[0] ? 31 : 32) ;
+                                reg1_i_not[28] ? 3 : reg1_i_not[27] ? 4 : reg1_i_not[26] ? 5 :
+                                reg1_i_not[25] ? 6 : reg1_i_not[24] ? 7 : reg1_i_not[23] ? 8 : 
+                                reg1_i_not[22] ? 9 : reg1_i_not[21] ? 10 : reg1_i_not[20] ? 11 :
+                                reg1_i_not[19] ? 12 : reg1_i_not[18] ? 13 : reg1_i_not[17] ? 14 : 
+                                reg1_i_not[16] ? 15 : reg1_i_not[15] ? 16 : reg1_i_not[14] ? 17 : 
+                                reg1_i_not[13] ? 18 : reg1_i_not[12] ? 19 : reg1_i_not[11] ? 20 :
+                                reg1_i_not[10] ? 21 : reg1_i_not[9] ? 22 : reg1_i_not[8] ? 23 : 
+                                reg1_i_not[7] ? 24 : reg1_i_not[6] ? 25 : reg1_i_not[5] ? 26 : 
+                                reg1_i_not[4] ? 27 : reg1_i_not[3] ? 28 : reg1_i_not[2] ? 29 : 
+                                reg1_i_not[1] ? 30 : reg1_i_not[0] ? 31 : 32) ;
 			end
 			default: begin
 				arithmeticres <= `ZeroWord;
@@ -325,12 +279,12 @@ module EX(
 
 	//取得乘法操作的操作数，如果是有符号除法且操作数是负数，那么取反加一
 	assign opdata1_mult = (((aluop_i == `EXE_MUL_OP) || (aluop_i == `EXE_MULT_OP) ||
-													(aluop_i == `EXE_MADD_OP) || (aluop_i == `EXE_MSUB_OP))
-													&& (reg1_i[31] == 1'b1)) ? (~reg1_i + 1) : reg1_i;
+                            (aluop_i == `EXE_MADD_OP) || (aluop_i == `EXE_MSUB_OP))
+                            && (reg1_i[31] == 1'b1)) ? (~reg1_i + 1) : reg1_i;
 
 	assign opdata2_mult = (((aluop_i == `EXE_MUL_OP) || (aluop_i == `EXE_MULT_OP) ||
-													(aluop_i == `EXE_MADD_OP) || (aluop_i == `EXE_MSUB_OP))
-													&& (reg2_i[31] == 1'b1)) ? (~reg2_i + 1) : reg2_i;	
+                            (aluop_i == `EXE_MADD_OP) || (aluop_i == `EXE_MSUB_OP))
+                            && (reg2_i[31] == 1'b1)) ? (~reg2_i + 1) : reg2_i;	
 
 	assign hilo_temp = opdata1_mult * opdata2_mult;																				
 
@@ -338,8 +292,7 @@ module EX(
 		if(rst == `RstEnable) begin
 			mulres <= {`ZeroWord,`ZeroWord};
 		end else if ((aluop_i == `EXE_MULT_OP) || (aluop_i == `EXE_MUL_OP) ||
-									(aluop_i == `EXE_MADD_OP) || 
-									(aluop_i == `EXE_MSUB_OP)) begin
+                    (aluop_i == `EXE_MADD_OP) || (aluop_i == `EXE_MSUB_OP)) begin 
 			if (reg1_i[31] ^ reg2_i[31] == 1'b1) begin
 				mulres <= ~hilo_temp + 1;
 			end else begin
