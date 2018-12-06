@@ -1,5 +1,5 @@
-// Module PC with structural conflict signals
-// Author: LYL
+// Module PC with structural conflict signals based on code by Lei Silei.
+// Modified by LYL
 // Created on: 2018/11/22
 
 `timescale 1ns / 1ps

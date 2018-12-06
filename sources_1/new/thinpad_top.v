@@ -2,7 +2,7 @@
 `timescale 1ns / 1ps
 `include "defines.vh"
 
-module thinpad_top #(clk_opt = `USE_CLOCK_12M5)(
+module thinpad_top(
     input wire clk_50M,           //50MHz 时钟输入
     input wire clk_11M0592,       //11.0592MHz 时钟输入
 
@@ -82,21 +82,20 @@ module thinpad_top #(clk_opt = `USE_CLOCK_12M5)(
     output wire video_de           //行数据有效信号，用于区分消隐区
 );
 
-    /* =========== Demo code begin =========== */
-    
     //// PLL分频示例
-    //wire locked, clk_10M, clk_20M;
-    //pll_example clock_gen 
-    // (
-    //  // Clock out ports
-    //  .clk_out1(clk_10M), // 时钟输出1，频率在IP配置界面中设置
-    //  .clk_out2(clk_20M), // 时钟输出2，频率在IP配置界面中设置
-    //  // Status and control signals
-    //  .reset(reset_btn), // PLL复位输入
-    //  .locked(locked), // 锁定输出，"1"表示时钟稳定，可作为后级电路复位
-    // // Clock in ports
-    //  .clk_in1(clk_50M) // 外部时钟输入
-    // );
+    wire locked; //, clk_10M, clk_20M;
+    wire clk_22M5, clk_25M;
+    clk_wiz_1 clock_gen 
+    (
+      // Clock out ports
+      .clk_out1(clk_22M5), // 时钟输出1，频率在IP配置界面中设置
+      .clk_out2(clk_25M), // 时钟输出2，频率在IP配置界面中设置
+      // Status and control signals
+      .reset(/*reset_btn*/ 0), // PLL复位输入
+      .locked(locked), // 锁定输出，"1"表示时钟稳定，可作为后级电路复位
+     // Clock in ports
+      .clk_in1(clk_50M) // 外部时钟输入
+     );
     
     //reg reset_of_clk10M;
     //// 异步复位，同步释放
@@ -124,68 +123,7 @@ module thinpad_top #(clk_opt = `USE_CLOCK_12M5)(
     // f=dpy0[6] // e     c
     // g=dpy0[7] // |     |
     //           // ---d---  p
-     
-//    //直连串口接收发送演示，从直连串口收到的数据再发送出去
-//    wire [7:0] ext_uart_rx;
-//    reg  [7:0] ext_uart_buffer, ext_uart_tx;
-//    wire ext_uart_ready, ext_uart_busy;
-//    reg ext_uart_start, ext_uart_avai;
     
-//    async_receiver #(.ClkFrequency(50000000),.Baud(9600)) //接收模块，9600无检验位
-//        ext_uart_r(
-//            .clk(clk_50M),                       //外部时钟信号
-//            .RxD(rxd),                           //外部串行信号输入
-//            .RxD_data_ready(ext_uart_ready),  //数据接收到标志
-//            .RxD_clear(ext_uart_ready),       //清除接收标志
-//            .RxD_data(ext_uart_rx)             //接收到的一字节数据
-//        );
-        
-//    always @(posedge clk_50M) begin //接收到缓冲区ext_uart_buffer
-//        if(ext_uart_ready)begin
-//            ext_uart_buffer <= ext_uart_rx;
-//            ext_uart_avai <= 1;
-//        end else if(!ext_uart_busy && ext_uart_avai)begin 
-//            ext_uart_avai <= 0;
-//        end
-//    end
-//    always @(posedge clk_50M) begin //将缓冲区ext_uart_buffer发送出去
-//        if(!ext_uart_busy && ext_uart_avai)begin 
-//            ext_uart_tx <= ext_uart_buffer;
-//            ext_uart_start <= 1;
-//        end else begin 
-//            ext_uart_start <= 0;
-//        end
-//    end
-    
-//    async_transmitter #(.ClkFrequency(50000000),.Baud(9600)) //发送模块，9600无检验位
-//        ext_uart_t(
-//            .clk(clk_50M),                  //外部时钟信号
-//            .TxD(txd),                      //串行信号输出
-//            .TxD_busy(ext_uart_busy),       //发送器忙状态指示
-//            .TxD_start(ext_uart_start),    //开始发送信号
-//            .TxD_data(ext_uart_tx)        //待发送的数据
-//        );
-    
-//    //图像输出演示，分辨率800x600@75Hz，像素时钟为50MHz
-//    wire [11:0] hdata;
-//    assign video_red = hdata < 266 ? 3'b111 : 0; //红色竖条
-//    assign video_green = hdata < 532 && hdata >= 266 ? 3'b111 : 0; //绿色竖条
-//    assign video_blue = hdata >= 532 ? 2'b11 : 0; //蓝色竖条
-//    assign video_clk = clk_50M;
-//    vga #(12, 800, 856, 976, 1040, 600, 637, 643, 666, 1, 1) vga800x600at75 (
-//        .clk(clk_50M), 
-//        .hdata(hdata), //横坐标
-//        .vdata(),      //纵坐标
-//        .hsync(video_hsync),
-//        .vsync(video_vsync),
-//        .data_enable(video_de)
-//    );
-    
-    /* =========== Demo code end =========== */
-    
-    reg clk_25M = 0;
-    always @(posedge clk_50M)
-        clk_25M = !clk_25M;  
     reg clk_12M5 = 0;
     reg clk_12M5_count = 0;
     always @(posedge clk_50M) begin
@@ -193,16 +131,8 @@ module thinpad_top #(clk_opt = `USE_CLOCK_12M5)(
             clk_12M5 <= !clk_12M5;
         clk_12M5_count <= !clk_12M5_count;
     end
-    reg clk;
-    always @(*) begin
-        case (clk_opt)
-        `USE_CLOCK_50M:     clk <= clk_50M;
-        `USE_CLOCK_25M:     clk <= clk_25M;
-        `USE_CLOCK_12M5:    clk <= clk_12M5;
-        `USE_CLOCK_BTN:     clk <= clock_btn;
-        default:            clk <= clk_12M5;
-        endcase    
-    end
+
+    wire clk = clk_22M5;
     wire flash_clk = clk_12M5;  // clk_11M0592 is problematic
     wire flash_btn = clock_btn;
     
@@ -234,13 +164,11 @@ module thinpad_top #(clk_opt = `USE_CLOCK_12M5)(
 //    wire[5:0] interrupt = {5'b00000, timer_int, gpio_int, uart_int};
 
     // VGA
-    wire[11:0] vga_hdata;      // 琛?
-    wire[11:0] vga_vdata;      // 鍒
+    wire[11:0] vga_hdata;     
+    wire[11:0] vga_vdata;      
     wire[`DataBus] vga_data;
     wire[2:0] vga_state;
 
-//   wire ram_clk;
-//    assign ram_clk = (cpu.ctrl.state) ? clk_12M5 : clk_25M;
     BasicRamWrapper rom_wrapper(
        .clk(clk),
        .addr_i(rom_addr),
@@ -338,8 +266,8 @@ module thinpad_top #(clk_opt = `USE_CLOCK_12M5)(
     assign video_clk = clk_50M;
     final_vga #(12, 800, 856, 976, 1040, 600, 637, 643, 666, 1, 1) final_vga0 (
         .clk(clk_50M), 
-        .hdata(vga_hdata), //妯潗鏍?
-        .vdata(vga_vdata),      //绾靛潗鏍?
+        .hdata(vga_hdata), 
+        .vdata(vga_vdata), 
         .hsync(video_hsync),
         .vsync(video_vsync),
         .data_enable(video_de),
@@ -354,7 +282,6 @@ module thinpad_top #(clk_opt = `USE_CLOCK_12M5)(
     );
     
     SEG7_LUT lo_seg(dpy0, {1'b0, cpu.ctrl.state});
-//    assign leds = flash_ctrl_addr[1+:16];
     assign leds = cpu.pc_value[15:0];
 
 endmodule
